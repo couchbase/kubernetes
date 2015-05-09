@@ -55,9 +55,9 @@ $ gcloud config set container/cluster couchbase-server
 ## Create two pods
 
 ```
-$ wget https://gist.githubusercontent.com/tleyden/7cc7336f6f68f958e2b1/raw/a5b67223f8779004ae3e45dcc37f38ccf8a531de/couchbase-server.yaml
+$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-1.yaml
 $ gcloud alpha container kubectl create -f couchbase-server.yaml
-$ wget https://gist.githubusercontent.com/tleyden/ed1303f2f40a04c21811/raw/2d323556f8debb4e79d79fa67134e2eaa9866e32/couchbase-server-2.yaml
+$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-2.yaml
 $ gcloud alpha container kubectl create -f couchbase-server-2.yaml
 ```
 
