@@ -1,0 +1,15 @@
+---
+  id: "couchbase-server-2"
+  kind: "Pod"
+  apiVersion: "v1beta1"
+  desiredState: 
+    manifest: 
+      version: "v1beta1"
+      containers: 
+        - 
+          name: "couchbase-server-2"
+          image: "couchbase/server"
+          ports: 
+            - 
+              containerPort: 8091
+              hostPort: 8091
