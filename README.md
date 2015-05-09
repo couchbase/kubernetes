@@ -43,7 +43,7 @@ NAME ZONE MACHINE_TYPE INTERNAL_IP EXTERNAL_IP STATUS
 ```
 $ gcloud alpha container clusters create couchbase-server \
     --num-nodes 2 \
-        --machine-type g1-small
+    --machine-type g1-small
 ```
 
 Set your default cluster:
