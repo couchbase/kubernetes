@@ -4,13 +4,13 @@ metadata:
   name: couchbase-etcd-service
 spec:
   ports:
-    - port: 4001
-      name: api port
-      targetPort: 4001
+    - port: 2379
+      name: client communication port
+      targetPort: 2379
       protocol: TCP
-    - port: 7001
-      name: admin port
-      targetPort: 7001
+    - port: 2380
+      name: server to server communication port
+      targetPort: 2380
       protocol: TCP
   selector:
     name: couchbase-etcd
