@@ -9,7 +9,7 @@ spec:
       ports:
         -
           containerPort: 2379
-          hostPort: 2370
+          hostPort: 2379
         -
           containerPort: 2380
           hostPort: 2380
