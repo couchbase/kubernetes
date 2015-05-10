@@ -55,8 +55,9 @@ $ gcloud config set container/cluster couchbase-server
 ## Create two pods
 
 ```
+$ git clone .. 
 $ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-1.yaml
-$ gcloud alpha container kubectl create -f couchbase-server.yaml
+$ gcloud alpha container kubectl create -f couchbase-server-1.yaml
 $ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-2.yaml
 $ gcloud alpha container kubectl create -f couchbase-server-2.yaml
 ```
@@ -75,6 +76,13 @@ $ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags c
 ```
 $ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
 $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
+```
+
+## Create a service
+
+```
+$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/services/cbs-service-1.yaml
+$ gcloud alpha container kubectl create -f cbs-service-1.yaml
 ```
 
 

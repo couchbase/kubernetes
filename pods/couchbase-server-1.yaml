@@ -1,10 +1,10 @@
 ---
   id: "couchbase-server-1"
   kind: "Pod"
-  apiVersion: "v1beta1"
+  apiVersion: "v1beta3"
   desiredState: 
     manifest: 
-      version: "v1beta1"
+      version: "v1beta3"
       containers: 
         - 
           name: "couchbase-server-1"

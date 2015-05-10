@@ -1,0 +1,14 @@
+apiVersion: v1beta3
+kind: Service
+metadata:
+  name: couchbase-etcd
+spec:
+  ports:
+    - port: 4001
+      targetPort: 4001
+      protocol: TCP
+    - port: 7001
+      targetPort: 7001
+      protocol: TCP
+  selector:
+    name: couchbase-etcd
