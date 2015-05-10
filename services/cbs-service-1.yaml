@@ -1,10 +1,9 @@
 ---
-  id: "cbs-service-1"
+  id: "couchbase-service"
   kind: "Service"
   apiVersion: "v1beta3"
-  port: 8091
-  containerPort: "couchbase-server-1"
+  portalIP: None
   selector: 
-    name: "couchbase-server-1"
+    name: "couchbase-server"
   labels: 
-    name: "cbs-service-1"
+    name: "couchbase-service"

@@ -1,10 +1,10 @@
 apiVersion: v1beta3
 kind: Pod
 metadata:
-  name: couchbase-server-1
+  name: couchbase-server
 spec:
   containers:
-    - name: couchbase-server-1
+    - name: couchbase-server
       image: couchbase/server
       ports:
         -
