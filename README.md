@@ -52,14 +52,25 @@ Set your default cluster:
 $ gcloud config set container/cluster couchbase-server
 ```
 
+## Clone couchbase-kubernetes
+
+```
+$ git clone https://github.com/tleyden/couchbase-kubernetes.git
+$ cd couchbase-kubernetes
+```
+
+## Create an etcd pod/service
+
+```
+$ gcloud alpha container kubectl create -f pods/etcd.yaml
+
+```
+
 ## Create two pods
 
 ```
-$ git clone .. 
-$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-1.yaml
-$ gcloud alpha container kubectl create -f couchbase-server-1.yaml
-$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/pods/couchbase-server-2.yaml
-$ gcloud alpha container kubectl create -f couchbase-server-2.yaml
+$ gcloud alpha container kubectl create -f pods/couchbase-server-1.yaml
+$ gcloud alpha container kubectl create -f pods/couchbase-server-2.yaml
 ```
 
 ## Expose port 8091 to public IP

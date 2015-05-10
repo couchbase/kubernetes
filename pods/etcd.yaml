@@ -6,11 +6,12 @@ spec:
   containers:
     - name: couchbase-etcd
       image: quay.io/coreos/etcd:2.0.3
-      ports: 
-	-
-	  containerPort: 4001
-	  hostPort: 4001
-	-
-	  containerPort: 7001
-	  hostPort: 7001
-	  
+      ports:
+        -
+          containerPort: 4001
+          hostPort: 4001
+        -
+          containerPort: 7001
+          hostPort: 7001
+
+
