@@ -74,7 +74,7 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
        │                             │                          │                           │       Create OR          │       
        ├─────────────────────────────┼──────────────────────────┼───────────────────────────┼──────────Join ───────────▶       
        │                             │                          │                           │        Cluster           │       
-       │                             │                          │       Add my IP under     │                          │       
+       │                             │                          │    Add my pod IP under    │                          │       
        ├─────────────────────────────┼──────────────────────────┼───────cbs-node-state──────▶                          │       
        │                             │                          │                           │                          │       
        │                             │                          │                           │                          │       
