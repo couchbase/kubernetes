@@ -1,9 +1,17 @@
----
-  id: "couchbase-service"
-  kind: "Service"
-  apiVersion: "v1beta3"
+apiVersion: v1beta3
+kind: Service
+metadata:
+  name: couchbase-service
+spec:
+  ports:
+    - port: 8091 # the port that this service should serve on
+      # the container on each pod to connect to, can be a name
+      # (e.g. 'www') or a number (e.g. 80)
+      targetPort: 8091
+      protocol: TCP
   portalIP: None
-  selector: 
-    name: "couchbase-server"
-  labels: 
-    name: "couchbase-service"
+  # just like the selector in the replication controller,
+  # but this time it identifies the set of pods to load balance
+  # traffic to.
+  selector:
+    name: couchbase-server
