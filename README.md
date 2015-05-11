@@ -1,6 +1,89 @@
 
 Here are instructions on getting Couchbase Server running under Kubernetes on GKE (Google Container Engine).  Very much still in progress, and I'm doing things against the grain on purpose so I can learn more about what's under the hood in Kubernetes.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐                                      
+│                                 Kubernetes Cluster                                  │                                      
+│                                                                                     │                                      
+│ ┌─────────────────────────────────────────────────────────────────────────────────┐ │                                      
+│ │                                Kubernetes Node 1                                │ │                                      
+│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  ┌ ─ ─ ─ ─ ─ ─ ─ ─   ┌ ─ ─ ─ ─ ─ ─ ─ ─  │ │                                      
+│ │          Couchbase ReplicaSet             CB etcd service │   pod-reflector   │ │ │                                      
+│ │ │ ┌─────────────────────────────────┐ │  │/ RS3              │HDLS SVC / RS1    │ │                                      
+│ │   │         couchbase-pod-1         │      ┌────────────┐ │    ┌────────────┐ │ │ │                                      
+│ │ │ │ ┌─────────────┐ ┌─────────────┐ │ │  │ │etcd pod    │    │ │pod-reflecto│   │ │                                      
+│ │   │ │couchbase-con│ │couchbase-sid│ │      │            │ │    │r pod       │ │ │ │                                      
+│ │ │ │ │tainer-1     │ │ekick-contain│ │ │  │ │ ┌────────┐ │    │ │ ┌────────┐ │   │ │                                      
+│ │   │ │             │ │er-1         │ │      │ │etcd    │ │ │    │ │pod-refl│ │ │ │ │                                      
+│ │ │ │ │             │ │             │ │ │  │ │ │containe│ │    │ │ │ector   │ │   │ │                                      
+│ │   │ │             │ │             │ │      │ │r       │ │ │    │ │containe│ │ │ │ │                                      
+│ │ │ │ └─────────────┘ └─────────────┘ │ │  │ │ └────────┘ │    │ │ └────────┘ │   │ │                                      
+│ │   └─────────────────────────────────┘      └────────────┘ │    └────────────┘ │ │ │                                      
+│ │ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  └ ─ ─ ─ ─ ─ ─ ─ ─   └ ─ ─ ─ ─ ─ ─ ─ ─  │ │                                      
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │                                      
+│                                                                                     │                                      
+│ ┌─────────────────────────────────────────────────────────────────────────────────┐ │                                      
+│ │                                Kubernetes Node 2                                │ │                                      
+│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  ┌ ─ ─ ─ ─ ─ ─ ─ ─                      │ │                                      
+│ │          Couchbase ReplicaSet             CB etcd service │                     │ │                                      
+│ │ │ ┌─────────────────────────────────┐ │  │/ RS3                                 │ │                                      
+│ │   │         couchbase-pod-2         │      ┌────────────┐ │                     │ │                                      
+│ │ │ │ ┌─────────────┐ ┌─────────────┐ │ │  │ │etcd pod    │                       │ │                                      
+│ │   │ │couchbase-con│ │couchbase-sid│ │      │ ┌────────┐ │ │                     │ │                                      
+│ │ │ │ │tainer-2     │ │ekick-contain│ │ │  │ │ │etcd    │ │                       │ │                                      
+│ │   │ │             │ │er-2         │ │      │ │containe│ │ │                     │ │                                      
+│ │ │ │ │             │ │             │ │ │  │ │ │r       │ │                       │ │                                      
+│ │   │ │             │ │             │ │      │ │        │ │ │                     │ │                                      
+│ │ │ │ └─────────────┘ └─────────────┘ │ │  │ │ └────────┘ │                       │ │                                      
+│ │   └─────────────────────────────────┘      └────────────┘ │                     │ │                                      
+│ │ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  └ ─ ─ ─ ─ ─ ─ ─ ─                      │ │                                      
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │                                      
+└─────────────────────────────────────────────────────────────────────────────────────┘                                      
+
+```
+
+## Setup interaction
+
+```
+┌─────────────┐               ┌─────────────┐            ┌─────────────┐             ┌─────────────┐            ┌─────────────┐
+│  Couchbase  │               │   K8s API   │            │Pod Reflector│             │  Couchbase  │            │Couchbase (in│
+│  Sidekick   │               │             │            │  REST API   │             │    Etcd     │            │sidekick pod)│
+└──────┬──────┘               └──────┬──────┘            └──────┬──────┘             └──────┬──────┘            └──────┬──────┘
+       │         Get IP of           │                          │                           │                          │       
+       │            Pod              │                          │                           │                          │       
+       ├─────────Reflector ──────────▶                          │                           │                          │       
+       │            pod              │                          │                           │                          │       
+       │                             │                          │                           │                          │       
+       ◀──────────PR IP──────────────┤                          │                           │                          │       
+       │                             │                          │                           │                          │       
+       │                             │        What's my         │                           │                          │       
+       ├─────────────────────────────┼─────────pod IP?──────────▶                           │                          │       
+       │                             │                          │                           │                          │       
+       │                             │        Your pod          │                           │                          │       
+       ◀─────────────────────────────┼───────────IP─────────────┤                           │                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │          Create           │                          │       
+       ├─────────────────────────────┼──────────────────────────┼───/couchbase-node-state───▶                          │       
+       │                             │                          │            dir            │                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │        Success OR         │                          │       
+       ◀─────────────────────────────┼──────────────────────────┼───────────Fail────────────┤                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │                           │       Create OR          │       
+       ├─────────────────────────────┼──────────────────────────┼───────────────────────────┼──────────Join ───────────▶       
+       │                             │                          │                           │        Cluster           │       
+       │                             │                          │       Add my IP under     │                          │       
+       ├─────────────────────────────┼──────────────────────────┼───────cbs-node-state──────▶                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │                           │                          │       
+       │                             │                          │                           │                          │       
+       ▼                             ▼                          ▼                           ▼                          ▼       
+
+```
+
 ## Install docker container with cloud-sdk
 
 ```
@@ -157,6 +240,22 @@ rebalance -c $container_1_private_ip \
 --server-add-username Administrator \
 --server-add-password password
 ```
+
+## Automated couchbase cluster setup (in progress)
+
+See https://github.com/GoogleCloudPlatform/kubernetes/blob/master/examples/rethinkdb/image/run.sh example
+
+* Start a headless service called couchbase-cluster
+* Sidekick
+    * Spins up docker image with couchcbase-cluster-go installed
+    * Start script gets hostname via MYHOST=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+    * Start script calls couchbase-cluster-go binary and passes hostname argument, and etcd server list as ec2-54-204-147-145.compute-1.amazonaws.com:4001
+
+Tried this, but there was a problem.  The host in MYHOST was not the same as the pod ip.  Got error:
+
+2015/05/11 01:43:20 Got error Get http://10.248.1.11:8091/pools: dial tcp 10.248.1.11:8091: connection refused trying to fetch details.  Assume that the cluster is not up yet, sleeping and will retry
+
+
 
 ## Todo
 
