@@ -78,9 +78,11 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 
 ```
 
-## Install docker container with cloud-sdk
+## Install cloud-sdk
 
-I recommend installing the cloud-sdk within a Docker container so you don't have to worry about getting into PDH (Python Dependency Hell) on your workstation.  However, if you already have it installed or are confident installing it on your workstation, skip this step.
+**Via docker container**
+
+I installed the cloud-sdk within a Docker container in order to avoid worrying about getting into PDH (Python Dependency Hell).
 
 ```
 $ docker pull google/cloud-sdk
@@ -89,6 +91,14 @@ $ docker run -ti google/cloud-sdk /bin/bash
 Go to the following link in your browser:
 ... etc
 ```
+
+**Standard method**
+
+```
+$ curl https://sdk.cloud.google.com | bash
+```
+
+## Setup cloud-sdk
 
 Now enable the alpha components:
 
@@ -138,17 +148,20 @@ $ git clone https://github.com/tleyden/couchbase-kubernetes.git
 $ cd couchbase-kubernetes
 ```
 
-## Automated couchbase cluster setup (in progress)
+## Automated couchbase cluster setup
 
 On etcd.couchbasemobile.com:
 
 * `etcdctl rm --recursive /couchbase.com/couchbase-node-state`
 * `etcdctl set /couchbase.com/userpass "user:passw0rd"`
 
-On box with gcloud tools installed:
+**Note: you will need to setup and run your own etcd service and use this instead of etcd.couchbasemobile.com.  This will hopefully get fixed soon**
 
-* `gcloud alpha container kubectl create -f pods/couchbase-server-1.yaml`
-* `gcloud alpha container kubectl create -f pods/couchbase-server-2.yaml`
+Kick off the replication controller:
+
+```
+$ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
+```
 
 ## View container logs
 
@@ -190,8 +203,6 @@ $ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
 $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
 ```
 
-# --- Most of the rest of the stuff that follows is not needed, just notes that need to be cleaned up.
-
 ## Create an etcd pod/service
 
 Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
@@ -201,87 +212,22 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 
 ```
 
-## Create couchbase server replication controller
-
-```
-$ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
-```
-
 ## Create a service
 
+TODO: in progress whether this is needed
+
 ```
-$ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/services/cbs-service-1.yaml
 $ gcloud alpha container kubectl create -f cbs-service-1.yaml
-```
-
-## Find internal routable IP addresses of pods
-
-```
-$ gcloud alpha container kubectl get pods
-POD                                                   IP           CONTAINER(S)              IMAGE(S)                                                                            HOST                                        LABELS                                                              STATUS    CREATED
-couchbase-server                                      10.248.1.3   couchbase-server          couchbase/server                                                                    k8s-couchbase-server-node-1/104.197.79.56   <none>                                                              Running   22 minutes
-couchbase-server2                                     10.248.2.4   couchbase-server2         couchbase/server                                                                    k8s-couchbase-server-node-2/146.148.85.81   <none>                                                              Running   20 minutes
-```
-
-So 10.248.1.3 and 10.248.2.4 are the routable IP addresses of the two pods.
-
-## Ssh into one of the GCE instances
-
-First get the instance name via:
-
-```
-$ gcloud compute instances list
-```
-
-Then ssh:
-
-```
-$ gcloud compute ssh k8s-couchbase-server-node-1
-```
-
-## Setup Couchbase server cluster
-
-```
-root@k8s:~$ container_1_private_ip=10.248.1.3; container_2_private_ip=10.248.2.4
-root@k8s:~$ docker run --entrypoint=/opt/couchbase/bin/couchbase-cli couchbase/server \
-cluster-init -c $container_1_private_ip \
---cluster-init-username=Administrator \
---cluster-init-password=password \
---cluster-init-ramsize=600 \
--u admin -p password
-```
-
-**Create a bucket**
-
-```
-root@k8s:~$ docker run --entrypoint=/opt/couchbase/bin/couchbase-cli couchbase/server \
-bucket-create -c $container_1_private_ip:8091 \
---bucket=default \
---bucket-type=couchbase \
---bucket-port=11211 \
---bucket-ramsize=600 \
---bucket-replica=1 \
--u Administrator -p password
-```
-
-**Add second Couchbase server node + rebalance**
-
-```
-root@k8s:~$ docker run --entrypoint=/opt/couchbase/bin/couchbase-cli couchbase/server \
-rebalance -c $container_1_private_ip \
--u Administrator -p password \
---server-add $container_2_private_ip \
---server-add-username Administrator \
---server-add-password password
 ```
 
 ## Todo
 
-* Replace individual pods with a Replication Controller
 * Create sync gateway which connects to Couchbase Server (cb service might be needed)
 * Use local etcd rather than external etcd
 
 ## References
+
+* [Couchbase Docker image on Dockerhub](https://hub.docker.com/u/couchbase/server)
 
 * [Google cloud sdk](https://registry.hub.docker.com/u/google/cloud-sdk/)
 
