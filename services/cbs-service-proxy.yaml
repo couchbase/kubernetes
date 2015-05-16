@@ -7,14 +7,15 @@ spec:
     - port: 8091 # the port that this service should serve on
       # the container on each pod to connect to, can be a name
       # (e.g. 'www') or a number (e.g. 80)
+      name: primary
       targetPort: 8091
       protocol: TCP
     - port: 8092 # the port that this service should serve on
       # the container on each pod to connect to, can be a name
       # (e.g. 'www') or a number (e.g. 80)
+      name: views 
       targetPort: 8092
       protocol: TCP
-
   # just like the selector in the replication controller,
   # but this time it identifies the set of pods to load balance
   # traffic to.
