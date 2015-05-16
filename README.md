@@ -157,6 +157,22 @@ On box with gcloud tools installed:
 * `gcloud alpha container kubectl create -f pods/couchbase-server-2.yaml`
 
 
+## Expose port 8091 to public IP
+
+**First couchbase server node**
+
+```
+$ gcloud compute instances add-tags k8s-couchbase-server-node-1 --tags cb1
+$ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags cb1
+```
+
+**Second couchbase server node**
+
+```
+$ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
+$ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
+```
+
 # --- Most of the rest of the stuff that follows is not needed, just notes that need to be cleaned up.
 
 ## Create an etcd pod/service
@@ -174,29 +190,12 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 $ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
 ```
 
-## Expose port 8091 to public IP
-
-**First couchbase server node**
-
-```
-$ gcloud compute instances add-tags k8s-couchbase-server-node-1 --tags cb1
-$ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags cb1
-```
-
-**Second couchbase server node**
-
-```
-$ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
-$ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
-```
-
 ## Create a service
 
 ```
 $ wget https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/services/cbs-service-1.yaml
 $ gcloud alpha container kubectl create -f cbs-service-1.yaml
 ```
-
 
 ## Find internal routable IP addresses of pods
 
@@ -259,13 +258,11 @@ rebalance -c $container_1_private_ip \
 --server-add-password password
 ```
 
-
-
 ## Todo
 
-* Is it possible to expose Couchbase Server as a "service" to Sync Gateway?
 * Replace individual pods with a Replication Controller
-
+* Create sync gateway which connects to Couchbase Server (cb service might be needed)
+* Use local etcd rather than external etcd
 
 ## References
 
