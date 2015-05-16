@@ -86,6 +86,8 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 
 ## Install docker container with cloud-sdk
 
+I recommend installing the cloud-sdk within a Docker container so you don't have to worry about getting into PDH (Python Dependency Hell) on your workstation.  However, if you already have it installed or are confident installing it on your workstation, skip this step.
+
 ```
 $ docker pull google/cloud-sdk
 $ docker run -ti google/cloud-sdk /bin/bash
@@ -144,16 +146,17 @@ $ cd couchbase-kubernetes
 
 ## Create an etcd pod/service
 
+Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
+
 ```
 $ gcloud alpha container kubectl create -f pods/etcd.yaml
 
 ```
 
-## Create two pods
+## Create couchbase server replication controller
 
 ```
-$ gcloud alpha container kubectl create -f pods/couchbase-server-1.yaml
-$ gcloud alpha container kubectl create -f pods/couchbase-server-2.yaml
+$ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
 ```
 
 ## Expose port 8091 to public IP
@@ -266,6 +269,14 @@ Tried this, but there was a problem.  The host in MYHOST was not the same as the
 	      * Is it possible to expose Couchbase Server as a "service" to Sync Gateway?
 	      * Replace individual pods with a Replication Controller
 
+## Sidekick steps
+
+
+Kick off sidekick:
+
+```
+docker run --name couchbase-sidekick --net=host tleyden5iwx/couchbase-cluster-go update-wrapper couchbase-cluster start-couchbase-sidekick --discover-local-ip
+```
 
 ## References
 

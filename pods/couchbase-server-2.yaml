@@ -10,3 +10,13 @@ spec:
         -
           containerPort: 8091
           hostPort: 8091
+    - name: couchbase-sidekick-2
+      image: tleyden5iwx/couchbase-cluster-go:latest
+      command:
+        - update-wrapper
+        - --skip-etcd-check
+        - couchbase-cluster
+        - start-couchbase-sidekick
+        - --discover-local-ip
+        - --etcd-servers
+        - http://etcd.couchbasemobile.com:4001

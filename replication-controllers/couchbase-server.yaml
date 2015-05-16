@@ -22,5 +22,5 @@ spec:
           image: couchbase/server
           ports:
             - containerPort: 8091
-            - hostPort: 8091
+              hostPort: 8091
 
