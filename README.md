@@ -1,5 +1,5 @@
 
-Here are instructions on getting Couchbase Server running under Kubernetes on GKE (Google Container Engine).  Very much still in progress, and I'm doing things against the grain on purpose so I can learn more about what's under the hood in Kubernetes.
+Here are instructions on getting Couchbase Server running under Kubernetes on GKE (Google Container Engine).  Very much still in progress.
 
 ## Architecture
 
@@ -144,6 +144,21 @@ $ git clone https://github.com/tleyden/couchbase-kubernetes.git
 $ cd couchbase-kubernetes
 ```
 
+## Automated couchbase cluster setup (in progress)
+
+On etcd.couchbasemobile.com:
+
+* `etcdctl rm --recursive /couchbase.com`
+* `etcdctl set /couchbase.com/userpass "user:passw0rd"`
+
+On box with gcloud tools installed:
+
+* `gcloud alpha container kubectl create -f pods/couchbase-server-1.yaml`
+* `gcloud alpha container kubectl create -f pods/couchbase-server-2.yaml`
+
+
+# --- Most of the rest of the stuff that follows is not needed, just notes that need to be cleaned up.
+
 ## Create an etcd pod/service
 
 Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
@@ -244,39 +259,13 @@ rebalance -c $container_1_private_ip \
 --server-add-password password
 ```
 
-## Automated couchbase cluster setup (in progress)
-
-See https://github.com/GoogleCloudPlatform/kubernetes/blob/master/examples/rethinkdb/image/run.sh example
-
-* Start a headless service called couchbase-cluster
-* Sidekick
-    * Spins up docker image with couchcbase-cluster-go installed
-    * Start script gets hostname via MYHOST=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
-    * Start script calls couchbase-cluster-go binary and passes hostname argument, and etcd server list as ec2-54-204-147-145.compute-1.amazonaws.com:4001
-
-Tried this, but there was a problem.  The host in MYHOST was not the same as the pod ip.  Got error:
-
-2015/05/11 01:43:20 Got error Get http://10.248.1.11:8091/pools: dial tcp 10.248.1.11:8091: connection refused trying to fetch details.  Assume that the cluster is not up yet, sleeping and will retry
-
 
 
 ## Todo
 
-* How can I use DNS hostnames instead of hardcoded private IPs for couchbase server nodes to see eachother?
-    * Looks like these already get predefined
-            * k8s-couchbase-server-node-1
-	      * k8s-couchbase-server-node-2
-	      * Is it possible to expose Couchbase Server as a "service" to Sync Gateway?
-	      * Replace individual pods with a Replication Controller
+* Is it possible to expose Couchbase Server as a "service" to Sync Gateway?
+* Replace individual pods with a Replication Controller
 
-## Sidekick steps
-
-
-Kick off sidekick:
-
-```
-docker run --name couchbase-sidekick --net=host tleyden5iwx/couchbase-cluster-go update-wrapper couchbase-cluster start-couchbase-sidekick --discover-local-ip
-```
 
 ## References
 
