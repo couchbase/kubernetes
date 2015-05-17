@@ -5,31 +5,31 @@ metadata:
 spec:
   ports:  # see http://docs.couchbase.com/admin/admin/Install/install-networkPorts.html
     - port: 8091 
-      name: Web administration Port
+      name: webadministrationport
       targetPort: 8091
       protocol: TCP
     - port: 8092 
-      name: Couchbase API Port
+      name: couchbaseapiport
       targetPort: 8092
       protocol: TCP
     - port: 11207
-      name: Internal/External Bucket Port for SSL
+      name: internalexternalbucketssl
       targetPort: 11207
       protocol: TCP
     - port: 11210
-      name: Internal/External Bucket Port
+      name: internalexternalbucket
       targetPort: 11210
       protocol: TCP
     - port: 11211
-      name: Client interface (proxy)
+      name: clientinterfaceproxy
       targetPort: 11211
       protocol: TCP
     - port: 18091
-      name: Internal REST HTTPS for SSL
+      name: internalresthttps
       targetPort: 18091
       protocol: TCP
     - port: 18092
-      name: Internal CAPI HTTPS for SSL
+      name: internalcapihttps
       targetPort: 18092
       protocol: TCP
   # just like the selector in the replication controller,
