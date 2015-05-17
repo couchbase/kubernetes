@@ -26,4 +26,6 @@ spec:
           ports:
             - containerPort: 4984
               hostPort: 4984
+            - containerPort: 4985
+              hostPort: 4985
 
