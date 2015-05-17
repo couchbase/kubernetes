@@ -7,12 +7,12 @@ spec:
     - name: app-etcd
       image: quay.io/coreos/etcd:v2.0.3
       command:
-	- -name
-	- app-etcd
-	- -listen-client-urls
-	- http://0.0.0.0:2379
-	- -advertise-client-urls
-	- http://app-etcd-service:2379
+        - -name
+        - app-etcd
+        - -listen-client-urls
+        - http://0.0.0.0:2379
+        - -advertise-client-urls
+        - http://app-etcd-service:2379
       ports:
         -
           containerPort: 2379
@@ -20,5 +20,3 @@ spec:
         -
           containerPort: 2380
           hostPort: 2380
-
-
