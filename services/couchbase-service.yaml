@@ -3,18 +3,34 @@ kind: Service
 metadata:
   name: couchbase-service
 spec:
-  ports:
-    - port: 8091 # the port that this service should serve on
-      # the container on each pod to connect to, can be a name
-      # (e.g. 'www') or a number (e.g. 80)
-      name: primary
+  ports:  # see http://docs.couchbase.com/admin/admin/Install/install-networkPorts.html
+    - port: 8091 
+      name: Web administration Port
       targetPort: 8091
       protocol: TCP
-    - port: 8092 # the port that this service should serve on
-      # the container on each pod to connect to, can be a name
-      # (e.g. 'www') or a number (e.g. 80)
-      name: views 
+    - port: 8092 
+      name: Couchbase API Port
       targetPort: 8092
+      protocol: TCP
+    - port: 11207
+      name: Internal/External Bucket Port for SSL
+      targetPort: 11207
+      protocol: TCP
+    - port: 11210
+      name: Internal/External Bucket Port
+      targetPort: 11210
+      protocol: TCP
+    - port: 11211
+      name: Client interface (proxy)
+      targetPort: 11211
+      protocol: TCP
+    - port: 18091
+      name: Internal REST HTTPS for SSL
+      targetPort: 18091
+      protocol: TCP
+    - port: 18092
+      name: Internal CAPI HTTPS for SSL
+      targetPort: 18092
       protocol: TCP
   # just like the selector in the replication controller,
   # but this time it identifies the set of pods to load balance
