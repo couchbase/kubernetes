@@ -3,7 +3,7 @@ kind: ReplicationController
 metadata:
   name: sync-gateway
 spec:
-  replicas: 1
+  replicas: 2
   # selector identifies the set of Pods that this
   # replicaController is responsible for managing
   selector:
