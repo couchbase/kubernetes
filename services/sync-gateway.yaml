@@ -1,0 +1,20 @@
+apiVersion: v1beta3
+kind: Service
+metadata:
+  name: sync-gateway-service
+spec:
+  ports:
+    - port: 4984
+      name: API port
+      targetPort: 4984
+      protocol: TCP
+    - port: 4985
+      name: Admin API port
+      targetPort: 4985
+      protocol: TCP
+  # just like the selector in the replication controller,
+  # but this time it identifies the set of pods to load balance
+  # traffic to.
+  selector:
+    name: sync-gateway
+  createExternalLoadBalancer: true
