@@ -5,11 +5,11 @@ metadata:
 spec:
   ports:
     - port: 4984
-      name: API port
+      name: apiport
       targetPort: 4984
       protocol: TCP
     - port: 4985
-      name: Admin API port
+      name: adminapiport
       targetPort: 4985
       protocol: TCP
   # just like the selector in the replication controller,
