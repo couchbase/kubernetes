@@ -208,6 +208,20 @@ $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags 
 $ gcloud alpha container kubectl create -f services/couchbase-service.yaml
 ```
 
+## Create a Sync Gateway replication set
+
+Sync Gateway is a server-side component for Couchbase Mobile which provides a REST API in front of Couchbase Server, which Couchbase Lite enabled mobile apps connect to in order to sync their data.
+
+It provides a good example of setting up an application tier on top of Couchbase Server.
+
+By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/tleyden/couchbase-kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **service** address: `http://couchbase-service:8091`
+
+To kick off a Sync Gateway replica set, run:
+
+```
+$ gcloud alpha container kubectl create -f replication-controllers/sync-gateway.yaml
+```
+
 ## Create an etcd pod/service
 
 Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
@@ -220,8 +234,10 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 
 ## Todo
 
-* Create sync gateway which connects to Couchbase Server (cb service might be needed)
+* Setup EXTERNAL sync gateway service and expose it
 * Use local etcd rather than external etcd
+* Look into host mounted volumes
+
 
 ## References
 
