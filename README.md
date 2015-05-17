@@ -52,28 +52,28 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 └──────┬──────┘              └──────┬──────┘                  └──────┬──────┘            └──────┬──────┘
        │                            │                                │                          │       
        │                            │                                │                          │       
-       │      Get ip of first       │                                │                          │       
+       │      Get IP of first       │                                │                          │       
        ├────non-loopback iface──────▶                                │                          │       
        │                            │                                │                          │       
+       │         Pod's IP           │                                │                          │       
+       ◀─────────address────────────┤                                │                          │       
        │                            │                                │                          │       
-       ◀────────────────────────────┤                                │                          │       
+       │                            │             Create             │                          │       
+       ├────────────────────────────┼──────/couchbase-node-state─────▶                          │       
+       │                            │               dir              │                          │       
        │                            │                                │                          │       
+       │                            │           Success OR           │                          │       
+       ◀────────────────────────────┼──────────────Fail──────────────┤                          │       
        │                            │                                │                          │       
-       ├────────────────────────────┼────────────────────────────────▶                          │       
-       │                            │                                │                          │       
-       │          Pod's IP          │                                │                          │       
-       │                            │                                │                          │       
-       ◀────────────────────────────┼────────────────────────────────┤                          │       
-       │                            │        /couchbase-node-state   │                          │       
-       │                            │                 dir            │         Create OR        │       
+       │                            │                                │         Create OR        │       
        ├────────────────────────────┼────────────────────────────────┼────────────Join ─────────▶       
-       │                            │              Success OR        │          Cluster         │       
-       │                            │                 Fail           │                          │       
+       │                            │                                │          Cluster         │       
+       │                            │                                │                          │       
        │                            │                                │     Add my pod IP under  │       
        ├────────────────────────────┼────────────────────────────────┼───────cbs-node-state─────▶       
        │                            │                                │                          │       
        │                            │                                │                          │       
-       ▼                            ▼                                ▼                          ▼       
+       ▼                            ▼                                ▼                          ▼
 
 ```
 
@@ -202,6 +202,12 @@ $ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
 $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
 ```
 
+## Create a service for couchbase-server
+
+```
+$ gcloud alpha container kubectl create -f services/couchbase-service.yaml
+```
+
 ## Create an etcd pod/service
 
 Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
@@ -211,13 +217,6 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 
 ```
 
-## Create a service
-
-TODO: in progress whether this is needed
-
-```
-$ gcloud alpha container kubectl create -f cbs-service-1.yaml
-```
 
 ## Todo
 
