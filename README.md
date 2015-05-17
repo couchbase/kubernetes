@@ -235,6 +235,10 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 ## Todo
 
 * Setup EXTERNAL sync gateway service and expose it
+* What happens if you terminate a couchbase server pod?
+    * New pod comes up with different ip
+    * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
+    * To manually fix: fail over downed cb node, kick off rebalance
 * Use local etcd rather than external etcd
 * Look into host mounted volumes
 
