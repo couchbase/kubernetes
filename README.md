@@ -1,80 +1,61 @@
 
 Here are instructions on getting Couchbase Server running under Kubernetes on GKE (Google Container Engine).  Very much still in progress.
 
-## Architecture
+## Logical Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐                          
-│                            Kubernetes Cluster                            │                          
-│                                                                          │                          
-│ ┌──────────────────────────────────────────────────────────────────────┐ │                          
-│ │                          Kubernetes Node 1                           │ │                          
-│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   ┌ ─ ─ ─ ─ ─ ─ ─ ─  │ │                          
-│ │          Couchbase ReplicaSet (count=2)        │   CB etcd service │ │ │                          
-│ │ │ ┌──────────────────────────────────────────┐    │/ RS3             │ │                          
-│ │   │        couchbase-replicaset-pod-1        │ │    ┌────────────┐ │ │ │                          
-│ │ │ │ ┌─────────────────┐ ┌───────────────────┐│    │ │etcd pod    │   │ │                          
-│ │   │ │couchbase-server │ │couchbase-sidekick ││ │    │            │ │ │ │                          
-│ │ │ │ │    container    │ │     container     ││    │ │ ┌────────┐ │   │ │                          
-│ │   │ │                 │ │                   ││ │    │ │etcd    │ │ │ │ │                          
-│ │ │ │ │                 │ │                   ││    │ │ │containe│ │   │ │                          
-│ │   │ │                 │ │                   ││ │    │ │r       │ │ │ │ │                          
-│ │ │ │ └─────────────────┘ └───────────────────┘│    │ │ └────────┘ │   │ │                          
-│ │   └──────────────────────────────────────────┘ │    └────────────┘ │ │ │                          
-│ │ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   └ ─ ─ ─ ─ ─ ─ ─ ─  │ │                          
-│ └──────────────────────────────────────────────────────────────────────┘ │                          
-│                                                                          │                          
-│ ┌──────────────────────────────────────────────────────────────────────┐ │                          
-│ │                          Kubernetes Node 2                           │ │                          
-│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   ┌ ─ ─ ─ ─ ─ ─ ─ ─  │ │                          
-│ │          Couchbase ReplicaSet (count=2)        │   CB etcd service │ │ │                          
-│ │ │ ┌──────────────────────────────────────────┐    │/ RS3             │ │                          
-│ │   │        couchbase-replicaset-pod-2        │ │    ┌────────────┐ │ │ │                          
-│ │ │ │ ┌─────────────────┐ ┌──────────────────┐ │    │ │etcd pod    │   │ │                          
-│ │   │ │couchbase-server │ │couchbase-sidekick│ │ │    │ ┌────────┐ │ │ │ │                          
-│ │ │ │ │    container    │ │    container     │ │    │ │ │etcd    │ │   │ │                          
-│ │   │ │                 │ │                  │ │ │    │ │containe│ │ │ │ │                          
-│ │ │ │ │                 │ │                  │ │    │ │ │r       │ │   │ │                          
-│ │   │ │                 │ │                  │ │ │    │ │        │ │ │ │ │                          
-│ │ │ │ └─────────────────┘ └──────────────────┘ │    │ │ └────────┘ │   │ │                          
-│ │   └──────────────────────────────────────────┘ │    └────────────┘ │ │ │                          
-│ │ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   └ ─ ─ ─ ─ ─ ─ ─ ─  │ │                          
-│ └──────────────────────────────────────────────────────────────────────┘ │                          
-└──────────────────────────────────────────────────────────────────────────┘                          
-```
-
-## Setup interaction
+                ┌────────────────────────────────────────────────────────────────────┐                                                  
+                │                   Google Container Engine (GKE)                    │                                                  
+                │                                                                    │                                                  
+                │                                                                    │                                                  
+                │                                                                    │                                                  
+┌────────┐      │               ┌──────────────────────────────────────────────────┐ │                                                  
+│  REST  ├───┐  │               │                Kubernetes Cluster                │ │                                                  
+│ Client │   │  │               │                                                  │ │                                                  
+└────────┘   │  │ ┌──────────┐  │  ┌─────────────┐     ┌─────────┐      ┌────────┐ │ │                                                  
+             └──┼─▶ external │  │  │sync-gateway │     │couchbase│      │  etcd  │ │ │                                                  
+                │ │   load ──┼──┼─▶│   service   ├────▶│ service ├─────▶│service │ │ │                                                  
+┌────────┐   ┌──┼─▶ balancer │  │  │             │     │         │      │        │ │ │                                                  
+│  REST  │   │  │ └──────────┘  │  └─────────────┘     └─────────┘      └────────┘ │ │                                                  
+│ Client ├───┘  │               │                                                  │ │                                                  
+└────────┘      │               └──────────────────────────────────────────────────┘ │                                                  
+                │                                                                    │                                                  
+                └────────────────────────────────────────────────────────────────────┘                                                  
 
 ```
-┌─────────────┐              ┌─────────────┐                  ┌─────────────┐            ┌─────────────┐
-│  Couchbase  │              │  OS / libc  │                  │  Couchbase  │            │  Couchbase  │
-│  Sidekick   │              │             │                  │    Etcd     │            │   Server    │
-└──────┬──────┘              └──────┬──────┘                  └──────┬──────┘            └──────┬──────┘
-       │                            │                                │                          │       
-       │                            │                                │                          │       
-       │      Get IP of first       │                                │                          │       
-       ├────non-loopback iface──────▶                                │                          │       
-       │                            │                                │                          │       
-       │         Pod's IP           │                                │                          │       
-       ◀─────────address────────────┤                                │                          │       
-       │                            │                                │                          │       
-       │                            │             Create             │                          │       
-       ├────────────────────────────┼──────/couchbase-node-state─────▶                          │       
-       │                            │               dir              │                          │       
-       │                            │                                │                          │       
-       │                            │           Success OR           │                          │       
-       ◀────────────────────────────┼──────────────Fail──────────────┤                          │       
-       │                            │                                │                          │       
-       │                            │                                │         Create OR        │       
-       ├────────────────────────────┼────────────────────────────────┼────────────Join ─────────▶       
-       │                            │                                │          Cluster         │       
-       │                            │                                │                          │       
-       │                            │                                │     Add my pod IP under  │       
-       ├────────────────────────────┼────────────────────────────────┼───────cbs-node-state─────▶       
-       │                            │                                │                          │       
-       │                            │                                │                          │       
-       ▼                            ▼                                ▼                          ▼
 
+## Physical Architecture
+
+```
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                        Kubernetes Cluster                                                        │
+│                                                                                                                                  │
+│ ┌──────────────────────────────────────────────────────────────────────┐  ┌──────────────────────────────────────────────────┐   │
+│ │                          Kubernetes Node 1                           │  │                Kubernetes Node 2                 │   │
+│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   ┌ ─ ─ ─ ─ ─ ─ ─ ─  │  │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │   │
+│ │          Couchbase ReplicaSet (count=2)        │   CB etcd service │ │  │          Couchbase ReplicaSet (count=2)        │ │   │
+│ │ │ ┌──────────────────────────────────────────┐    │                  │  │ │ ┌──────────────────────────────────────────┐   │   │
+│ │   │        couchbase-replicaset-pod-1        │ │    ┌────────────┐ │ │  │   │        couchbase-replicaset-pod-2        │ │ │   │
+│ │ │ │ ┌─────────────────┐ ┌───────────────────┐│    │ │etcd pod    │   │  │ │ │ ┌─────────────────┐ ┌───────────────────┐│   │   │
+│ │   │ │couchbase-server │ │couchbase-sidekick ││ │    │            │ │ │  │   │ │couchbase-server │ │couchbase-sidekick ││ │ │   │
+│ │ │ │ │    container    │ │     container     ││    │ │ ┌────────┐ │   │  │ │ │ │    container    │ │     container     ││   │   │
+│ │   │ └─────────────────┘ └───────────────────┘│ │    │ │etcd    │ │ │ │  │   │ └─────────────────┘ └───────────────────┘│ │ │   │
+│ │ │ └──────────────────────────────────────────┘    │ │ │containe│ │   │  │ │ └──────────────────────────────────────────┘   │   │
+│ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘    │ │r       │ │ │ │  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │   │
+│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │ │ └────────┘ │   │  │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │   │
+│ │        Sync Gateway ReplicaSet (count=2)       │    └────────────┘ │ │  │        Sync Gateway ReplicaSet (count=2)       │ │   │
+│ │ │ ┌──────────────────────────────────────────┐    └ ─ ─ ─ ─ ─ ─ ─ ─  │  │ │ ┌──────────────────────────────────────────┐   │   │
+│ │   │         sync-gw-replicaset-pod-1         │ │                     │  │   │         sync-gw-replicaset-pod-2         │ │ │   │
+│ │ │ │ ┌──────────────────────────────────────┐ │                       │  │ │ │ ┌──────────────────────────────────────┐ │   │   │
+│ │   │ │             sync gateway             │ │ │                     │  │   │ │             sync gateway             │ │ │ │   │
+│ │ │ │ │              container               │ │                       │  │ │ │ │              container               │ │   │   │
+│ │   │ └──────────────────────────────────────┘ │ │                     │  │   │ └──────────────────────────────────────┘ │ │ │   │
+│ │ │ └──────────────────────────────────────────┘                       │  │ │ └──────────────────────────────────────────┘   │   │
+│ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘                     │  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │   │
+│ └──────────────────────────────────────────────────────────────────────┘  └──────────────────────────────────────────────────┘   │
+│                                                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Install cloud-sdk
@@ -162,6 +143,44 @@ Kick off the replication controller:
 $ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
 ```
 
+
+## Setup interaction
+
+Here is what is happening under the hood with the couchbase sidekicks to bootstrap the cluster:
+
+```
+┌─────────────┐              ┌─────────────┐                  ┌─────────────┐            ┌─────────────┐
+│  Couchbase  │              │  OS / libc  │                  │  Couchbase  │            │  Couchbase  │
+│  Sidekick   │              │             │                  │    Etcd     │            │   Server    │
+└──────┬──────┘              └──────┬──────┘                  └──────┬──────┘            └──────┬──────┘
+       │                            │                                │                          │       
+       │                            │                                │                          │       
+       │      Get IP of first       │                                │                          │       
+       ├────non-loopback iface──────▶                                │                          │       
+       │                            │                                │                          │       
+       │         Pod's IP           │                                │                          │       
+       ◀─────────address────────────┤                                │                          │       
+       │                            │                                │                          │       
+       │                            │             Create             │                          │       
+       ├────────────────────────────┼──────/couchbase-node-state─────▶                          │       
+       │                            │               dir              │                          │       
+       │                            │                                │                          │       
+       │                            │           Success OR           │                          │       
+       ◀────────────────────────────┼──────────────Fail──────────────┤                          │       
+       │                            │                                │                          │       
+       │                            │                                │         Create OR        │       
+       ├────────────────────────────┼────────────────────────────────┼────────────Join ─────────▶       
+       │                            │                                │          Cluster         │       
+       │                            │                                │                          │       
+       │                            │                                │     Add my pod IP under  │       
+       ├────────────────────────────┼────────────────────────────────┼───────cbs-node-state─────▶       
+       │                            │                                │                          │       
+       │                            │                                │                          │       
+       ▼                            ▼                                ▼                          ▼
+
+```
+
+
 ## View container logs
 
 First find the pod names that the replication controller spawned:
@@ -220,6 +239,37 @@ To kick off a Sync Gateway replica set, run:
 
 ```
 $ gcloud alpha container kubectl create -f replication-controllers/sync-gateway.yaml
+```
+
+## Create a publicly exposed Sync Gateway service
+
+```
+$ gcloud alpha container kubectl create -f services/sync-gateway.yaml
+```
+
+To find the IP address, run:
+
+```
+$ gcloud compute forwarding-rules list
+```
+
+and you should see:
+
+```
+NAME      REGION      IP_ADDRESS    IP_PROTOCOL TARGET
+aa94f7752 us-central1 104.197.15.37 TCP         us-central1/targetPools/aa94f7752
+```
+
+where `104.197.15.37` is a publicly accessible IP.  To verify, from your local workstation or any machine connected to the internet, run:
+
+```
+$ curl 104.197.15.37:4984
+```
+
+and you should see:
+
+```
+{"couchdb":"Welcome","vendor":{"name":"Couchbase Sync Gateway","version":1},"version":"Couchbase Sync Gateway/HEAD(nobranch)(04138fd)"}
 ```
 
 ## Create an etcd pod/service
