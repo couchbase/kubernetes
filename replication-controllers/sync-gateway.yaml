@@ -20,6 +20,9 @@ spec:
       containers:
         - name: sync-gateway
           image: couchbase/sync-gateway
+          command:
+            - sync_gateway
+            - https://raw.githubusercontent.com/tleyden/couchbase-kubernetes/master/config/sync-gateway.config
           ports:
             - containerPort: 4984
               hostPort: 4984
