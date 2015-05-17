@@ -24,6 +24,11 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 
 ```
 
+* Only the Sync Gateway (application tier) service is exposed to the outside world.
+* Sync Gateway uses the Couchbase Server service as it's data storage tier
+* The Couchbase Server service is only accessible from within the Kubernetes cluster, and is not exposed to the outside world.
+* The etcd service is used by "sidekicks" that run in the Couchbase Server pod to bootstrap the cluster.  Likewise, it is only accessible within the cluster.  (NOTE: currently an external etcd service is being used in this README, but hopefully that will change)
+
 ## Physical Architecture
 
 ```
@@ -274,6 +279,13 @@ and you should see:
 
 ## Create an etcd pod/service
 
+
+```
+$ ssh into node
+$ HostIP=`hostname -i`
+$ docker run -d -p 2380:2380 -p 2379:2379  --name etcd quay.io/coreos/etcd:v2.0.8 -name etcd0 -listen-client-urls http://0.0.0.0:2379 -advertise-client-urls http://${HostIP}:2379
+```
+
 Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
 
 ```
@@ -284,12 +296,12 @@ $ gcloud alpha container kubectl create -f pods/etcd.yaml
 
 ## Todo
 
-* Setup EXTERNAL sync gateway service and expose it
+* Use local etcd rather than external etcd
+* Improve story with pod termination -- add a shutdown hook
 * What happens if you terminate a couchbase server pod?
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
     * To manually fix: fail over downed cb node, kick off rebalance
-* Use local etcd rather than external etcd
 * Look into host mounted volumes
 
 

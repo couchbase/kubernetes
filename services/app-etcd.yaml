@@ -1,7 +1,7 @@
 apiVersion: v1beta3
 kind: Service
 metadata:
-  name: couchbase-etcd-service
+  name: app-etcd-service
 spec:
   ports:
     - port: 2379
@@ -13,4 +13,4 @@ spec:
       targetPort: 2380
       protocol: TCP
   selector:
-    name: couchbase-etcd
+    name: app-etcd
