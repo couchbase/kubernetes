@@ -8,10 +8,6 @@ spec:
       name: apiport
       targetPort: 4984
       protocol: TCP
-    - port: 4985
-      name: adminapiport
-      targetPort: 4985
-      protocol: TCP
   # just like the selector in the replication controller,
   # but this time it identifies the set of pods to load balance
   # traffic to.
