@@ -27,7 +27,7 @@ Here are instructions on getting Couchbase Server and Couchbase Sync Gateway run
 * Only the Sync Gateway (application tier) service is exposed to the outside world.
 * Sync Gateway uses the Couchbase Server service as it's data storage tier
 * The Couchbase Server service is only accessible from within the Kubernetes cluster, and is not exposed to the outside world.
-* The etcd service is used by "sidekicks" that run in the Couchbase Server pod to bootstrap the cluster.  Likewise, it is only accessible within the cluster.  (NOTE: currently an external etcd service is being used in this README, but hopefully that will change)
+* The etcd service is used by "sidekicks" that run in the Couchbase Server pod to bootstrap the cluster.  Likewise, it is only accessible within the cluster.
 
 # Physical Architecture
 
