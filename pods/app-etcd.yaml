@@ -5,13 +5,13 @@ metadata:
 spec:
   containers:
     - name: app-etcd
-      image: quay.io/coreos/etcd:v2.0.3
+      image: tleyden5iwx/etcd-discovery
       command:
-        - /etcd
+        - etcdisco
         - -listen-client-urls
         - http://0.0.0.0:2379
         - -advertise-client-urls
-        - http://app-etcd-service:2379
+        - http://{{.LOCAL_IP}}:2379
       ports:
         -
           containerPort: 2379
