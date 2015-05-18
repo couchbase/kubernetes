@@ -32,5 +32,5 @@ spec:
             - start-couchbase-sidekick
             - --discover-local-ip
             - --etcd-servers
-            - http://etcd.couchbasemobile.com:4001
+            - http://etcd.pod.ip:2379
 

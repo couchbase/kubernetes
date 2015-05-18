@@ -1,7 +1,7 @@
 
-Here are instructions on getting Couchbase Server running under Kubernetes on GKE (Google Container Engine).  Very much still in progress.
+Here are instructions on getting Couchbase Server and Couchbase Sync Gateway running under Kubernetes on GKE (Google Container Engine).  
 
-## Logical Architecture
+# Logical Architecture
 
 ```
                 ┌────────────────────────────────────────────────────────────────────┐                                                  
@@ -29,7 +29,7 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 * The Couchbase Server service is only accessible from within the Kubernetes cluster, and is not exposed to the outside world.
 * The etcd service is used by "sidekicks" that run in the Couchbase Server pod to bootstrap the cluster.  Likewise, it is only accessible within the cluster.  (NOTE: currently an external etcd service is being used in this README, but hopefully that will change)
 
-## Physical Architecture
+# Physical Architecture
 
 ```
 
@@ -62,6 +62,8 @@ Here are instructions on getting Couchbase Server running under Kubernetes on GK
 │                                                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+# Google Container Engine / Kubernetes setup
 
 ## Install cloud-sdk
 
@@ -126,6 +128,8 @@ Set your default cluster:
 $ gcloud config set container/cluster couchbase-server
 ```
 
+# Couchbase Server + Sync Gateway 
+
 ## Clone couchbase-kubernetes
 
 ```
@@ -133,21 +137,77 @@ $ git clone https://github.com/tleyden/couchbase-kubernetes.git
 $ cd couchbase-kubernetes
 ```
 
-## Automated couchbase cluster setup
+## Start etcd Pod
 
-On etcd.couchbasemobile.com:
+Although Kubernetes runs its own etcd, this is not accessible to applications running within Kubernetes.  The Couchbase sidekick containers require etcd to discover Couchbase Server Nodes and bootstrap the cluster.
 
-* `etcdctl rm --recursive /couchbase.com/couchbase-node-state`
-* `etcdctl set /couchbase.com/userpass "user:passw0rd"`
+The current recommended approach is to either:
 
-**Note: you will need to setup and run your own etcd service and use this instead of etcd.couchbasemobile.com.  This will hopefully get fixed soon**
+1. Run your own etcd cluster *outside* the Kubernetes cluster, and setup secure networking between the two (you don't want to expose your etcd cluster publicly)
+1. Start up a single node etcd within the Kubernetes cluster.
 
-Kick off the replication controller:
+Running your own separate etcd cluster is outside the scope of this document, so we'll ignore that option for now and focus on the other option.
+
+The downside with running a single etcd node within Kubernetes has the major disadvantage of being a single point of failure, nor will it handle pod restarts of the etcd pod -- if that pod is restarted and gets a new ip address, then future couchbase nodes that are started won't be able to find etcd and auto-join the cluster.
+
+Having said that, here's how to start the app-etcd Pod:
+
+```
+$ gcloud alpha container kubectl create -f pods/app-etcd.yaml
+```
+
+Get the pod ip:
+
+```
+$ gcloud alpha container kubectl get pod app-etcd
+```
+
+you should see:
+
+```
+POD        IP            CONTAINER(S)   IMAGE(S)                     HOST                  ...
+app-etcd   10.248.1.30   app-etcd       tleyden5iwx/etcd-discovery   k8s.../104.197.79.56  ...
+```
+
+Make a note of the Pod IP (10.248.1.30 in above example).  Side note -- app-etcd *should* be wrapped up a in a service, but that is still in progress.  See this [google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J).
+
+## Modify Couchbase Server Replication Controller
+
+Modify your couchbase-server replication controller to have the etcd Pod IP:
+
+```
+$ sed -i .bak 's/etcd.pod.ip/10.248.1.30/' replication-controllers/couchbase-server.yaml
+```
+
+Replacing `10.248.1.30` with your actual Pod IP found in the previous step.
+
+## Add Couchbase Server Admin credentials in etcd
+
+First, you will need to ssh into a node on your kubernetes cluster:
+
+```
+$ gcloud compute ssh k8s-couchbase-server-node-1
+```
+
+Next, use curl to add a value for the `/couchbase.com/userpass` key.  Replace `user:passw0rd` with the actual values you want to use.  
+
+```
+root@k8s~$ curl -L http://10.248.1.30:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
+```
+
+## Kick off Service and Replication Controller for couchbase-server
+
+First the service:
+
+```
+$ gcloud alpha container kubectl create -f services/couchbase-service.yaml
+```
+
+Then the replication controller:
 
 ```
 $ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
 ```
-
 
 ## Setup interaction
 
@@ -201,7 +261,7 @@ couchbase-controller-ho6ta
 couchbase-controller-j7yzf
 ```
 
-Now, to view the logs on all of the containers, run:
+View the logs on all of the containers via:
 
 ```
 $ gcloud alpha container kubectl log couchbase-controller-ho6ta couchbase-server
@@ -211,6 +271,8 @@ $ gcloud alpha container kubectl log couchbase-controller-j7yzf couchbase-sideki
 ```
 
 ## Expose port 8091 to public IP
+
+In order to access port 8091 from the outside world, you will need to add firewall rules to expose it.  While this isn't strictly necessary, it make administration much easier.  Rather than allowing blanket access, it would be possible to lock down access to a specific ip or range of ip addresses.
 
 **First couchbase server node**
 
@@ -226,25 +288,27 @@ $ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
 $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
 ```
 
-## Create a service for couchbase-server
+At this point, you should find the public IP of one your nodes by running `gcloud compute instances list` and looking for the EXTERNAL_IP (ignore the `k8s-couchbase-server-master` entry in that list).
 
-```
-$ gcloud alpha container kubectl create -f services/couchbase-service.yaml
-```
+Now visit public-ip:8091 in your browser, and you should see:
+
+![Couchbase Login Screen](http://tleyden-misc.s3.amazonaws.com/blog_images/couchbase_cluster_login.png)
+
+Login with the credentials used above in place of `user:passw0rd`
 
 ## Create a Sync Gateway replication set
 
 Sync Gateway is a server-side component for Couchbase Mobile which provides a REST API in front of Couchbase Server, which Couchbase Lite enabled mobile apps connect to in order to sync their data.
 
-It provides a good example of setting up an application tier on top of Couchbase Server.
-
-By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/tleyden/couchbase-kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **service** address: `http://couchbase-service:8091`
+It provides a good example of setting up an application tier on top of Couchbase Server.  If you were creating a tier of webservers that used a Couchbase SDK to store data in Couchbase Server, you're architecture would be very similar to this.
 
 To kick off a Sync Gateway replica set, run:
 
 ```
 $ gcloud alpha container kubectl create -f replication-controllers/sync-gateway.yaml
 ```
+
+By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/tleyden/couchbase-kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **service** address: `http://couchbase-service:8091`
 
 ## Create a publicly exposed Sync Gateway service
 
@@ -277,27 +341,12 @@ and you should see:
 {"couchdb":"Welcome","vendor":{"name":"Couchbase Sync Gateway","version":1},"version":"Couchbase Sync Gateway/HEAD(nobranch)(04138fd)"}
 ```
 
-## Create an etcd pod/service
+Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 
+## TODO
 
-```
-$ ssh into node
-$ HostIP=`hostname -i`
-$ docker run -d -p 2380:2380 -p 2379:2379  --name etcd quay.io/coreos/etcd:v2.0.8 -name etcd0 -listen-client-urls http://0.0.0.0:2379 -advertise-client-urls http://${HostIP}:2379
-```
-
-Not working yet, see [using etcd google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J)
-
-```
-$ gcloud alpha container kubectl create -f pods/etcd.yaml
-
-```
-
-
-## Todo
-
-* Use local etcd rather than external etcd
 * Improve story with pod termination -- add a shutdown hook
+* Wrap etcd in a service 
 * What happens if you terminate a couchbase server pod?
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
