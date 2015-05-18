@@ -176,7 +176,7 @@ Make a note of the Pod IP (10.248.1.30 in above example).  Side note -- app-etcd
 Modify your couchbase-server replication controller to have the etcd Pod IP:
 
 ```
-$ sed -i .bak 's/etcd.pod.ip/10.248.1.30/' replication-controllers/couchbase-server.yaml
+$ sed -i 's/etcd.pod.ip/10.248.1.30/' replication-controllers/couchbase-server.yaml
 ```
 
 Replacing `10.248.1.30` with your actual Pod IP found in the previous step.
