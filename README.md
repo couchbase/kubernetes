@@ -300,7 +300,7 @@ Login with the credentials used above in place of `user:passw0rd`
 
 Sync Gateway is a server-side component for Couchbase Mobile which provides a REST API in front of Couchbase Server, which Couchbase Lite enabled mobile apps connect to in order to sync their data.
 
-It provides a good example of setting up an application tier on top of Couchbase Server.  If you were creating a tier of webservers that used a Couchbase SDK to store data in Couchbase Server, you're architecture would be very similar to this.
+It provides a good example of setting up an application tier on top of Couchbase Server.  If you were creating a tier of webservers that used a Couchbase SDK to store data in Couchbase Server, your architecture would be very similar to this.
 
 To kick off a Sync Gateway replica set, run:
 
