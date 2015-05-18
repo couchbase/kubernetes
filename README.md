@@ -165,11 +165,14 @@ $ gcloud alpha container kubectl get pod app-etcd
 you should see:
 
 ```
-POD        IP            CONTAINER(S)   IMAGE(S)                     HOST                  ...
-app-etcd   10.248.1.30   app-etcd       tleyden5iwx/etcd-discovery   k8s.../104.197.79.56  ...
+POD        IP            CONTAINER(S)   IMAGE(S)                     HOST                               ...
+app-etcd   10.248.1.30   app-etcd       tleyden5iwx/etcd-discovery   k8s-couchbase-server-node-2/104..  ...
 ```
 
-Make a note of the Pod IP (10.248.1.30 in above example).  Side note -- app-etcd *should* be wrapped up a in a service, but that is still in progress.  See this [google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J).
+Make a note of:
+
+* the Pod IP (10.248.1.30 in above example).  Side note -- app-etcd *should* be wrapped up a in a service, but that is still in progress.  See this [google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J).
+* the Host it's running on (eg, k8s-couchbase-server-node-2)
 
 ## Modify Couchbase Server Replication Controller
 
@@ -183,17 +186,21 @@ Replacing `10.248.1.30` with your actual Pod IP found in the previous step.
 
 ## Add Couchbase Server Admin credentials in etcd
 
-First, you will need to ssh into a node on your kubernetes cluster:
+First, you will need to ssh into the host node where the app-etcd pod is running:
 
 ```
-$ gcloud compute ssh k8s-couchbase-server-node-1
+$ gcloud compute ssh k8s-couchbase-server-node-2
 ```
 
-Next, use curl to add a value for the `/couchbase.com/userpass` key.  Replace `user:passw0rd` with the actual values you want to use.  
+Replace `k8s-couchbase-server-node-2` with the host found in the previous step.
+
+Next, use curl to add a value for the `/couchbase.com/userpass` key in etcd.  
 
 ```
 root@k8s~$ curl -L http://10.248.1.30:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
 ```
+
+Replace `user:passw0rd` with the actual values you want to use.  
 
 ## Kick off Service and Replication Controller for couchbase-server
 
@@ -270,9 +277,29 @@ $ gcloud alpha container kubectl log couchbase-controller-j7yzf couchbase-server
 $ gcloud alpha container kubectl log couchbase-controller-j7yzf couchbase-sidekick
 ```
 
+* Expected [couchbase-server logs](https://gist.github.com/tleyden/b9677515952fa054ddd2)
+* Expected [couchbase-sidekick logs](https://gist.github.com/tleyden/269679e71131b7e8536e)
+
 ## Expose port 8091 to public IP
 
 In order to access port 8091 from the outside world, you will need to add firewall rules to expose it.  While this isn't strictly necessary, it make administration much easier.  Rather than allowing blanket access, it would be possible to lock down access to a specific ip or range of ip addresses.
+
+**Find instances**
+
+```
+$ gcloud compute instances list
+```
+
+You should see:
+
+```
+NAME                        ZONE          MACHINE_TYPE INTERNAL_IP    EXTERNAL_IP    STATUS
+k8s-couchbase-server-master us-central1-b g1-small     10.240.190.47  104.197.76.201 RUNNING
+k8s-couchbase-server-node-1 us-central1-b g1-small     10.240.23.227  104.197.79.56  RUNNING
+k8s-couchbase-server-node-2 us-central1-b g1-small     10.240.164.118 146.148.57.164 RUNNING
+```
+
+The two we care about are `k8s-couchbase-server-node-1` and `k8s-couchbase-server-node-2`.
 
 **First couchbase server node**
 
@@ -288,7 +315,7 @@ $ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
 $ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
 ```
 
-At this point, you should find the public IP of one your nodes by running `gcloud compute instances list` and looking for the EXTERNAL_IP (ignore the `k8s-couchbase-server-master` entry in that list).
+At this point, you should find the public IP of either one your from the `gcloud compute instances list` command and looking for the EXTERNAL_IP.
 
 Now visit public-ip:8091 in your browser, and you should see:
 
