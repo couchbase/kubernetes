@@ -372,12 +372,12 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 
 ## TODO
 
-* Improve story with pod termination -- add a shutdown hook
-* Wrap etcd in a service 
-* What happens if you terminate a couchbase server pod?
+* Run this on a different Kubernetes environment other than GKE.
+* Improve the story when Pods go down.  Currently some manual intervention is needed to rebalance the cluster, ideally I'd like this to be fully automated.  (possibly via pod shutdown hook).  Currently: 
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
     * To manually fix: fail over downed cb node, kick off rebalance
+* Improve the story on the "app-etcd" (I need my own etcd running to bootstrap the Couchbase cluster with, since the Kubernetes etcd is off-limits).  The instructions currently make the user go find the pod IP where etcd is running, and enter that in their config.  I'm hoping to get feedback from Kelsey or others on this [google groups post](https://groups.google.com/forum/#!msg/google-containers/rFIFD6Y0_Ew/PlYh0z7weLEJ) to get etcd wrapped up into a Kubernetes service.
 * Look into host mounted volumes
 
 
