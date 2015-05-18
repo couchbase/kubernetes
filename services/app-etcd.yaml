@@ -5,9 +5,11 @@ metadata:
 spec:
   ports:
     - port: 2379
+      name: clientport
       targetPort: 2379
       protocol: TCP
     - port: 2380
+      name: servertoserverport
       targetPort: 2380
       protocol: TCP
   selector:
