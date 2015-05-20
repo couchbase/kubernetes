@@ -133,7 +133,7 @@ $ gcloud config set container/cluster couchbase-server
 ## Clone couchbase-kubernetes
 
 ```
-$ git clone https://github.com/tleyden/couchbase-kubernetes.git
+$ git clone https://github.com/couchbase/kubernetes.git couchbase-kubernetes
 $ cd couchbase-kubernetes
 ```
 
