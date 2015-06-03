@@ -356,7 +356,7 @@ NAME      REGION      IP_ADDRESS    IP_PROTOCOL TARGET
 aa94f7752 us-central1 104.197.15.37 TCP         us-central1/targetPools/aa94f7752
 ```
 
-where `104.197.15.37` is a publicly accessible IP.  To verify, from your local workstation or any machine connected to the internet, run:
+where `104.197.15.37` is a publicly accessible IP.  To verify, from your local workstation or any machine connected to the internet, wait for a few minutes to give it a chance to startup, and then run:
 
 ```
 $ curl 104.197.15.37:4984
