@@ -4,23 +4,23 @@ Here are instructions on getting Couchbase Server and Couchbase Sync Gateway run
 # Logical Architecture
 
 ```
-                ┌────────────────────────────────────────────────────────────────────┐                                                  
-                │                   Google Container Engine (GKE)                    │                                                  
-                │                                                                    │                                                  
-                │                                                                    │                                                  
-                │                                                                    │                                                  
-┌────────┐      │               ┌──────────────────────────────────────────────────┐ │                                                  
-│  REST  ├───┐  │               │                Kubernetes Cluster                │ │                                                  
-│ Client │   │  │               │                                                  │ │                                                  
-└────────┘   │  │ ┌──────────┐  │  ┌─────────────┐     ┌─────────┐      ┌────────┐ │ │                                                  
-             └──┼─▶ external │  │  │sync-gateway │     │couchbase│      │  etcd  │ │ │                                                  
-                │ │   load ──┼──┼─▶│   service   ├────▶│ service ├─────▶│service │ │ │                                                  
-┌────────┐   ┌──┼─▶ balancer │  │  │             │     │         │      │        │ │ │                                                  
-│  REST  │   │  │ └──────────┘  │  └─────────────┘     └─────────┘      └────────┘ │ │                                                  
-│ Client ├───┘  │               │                                                  │ │                                                  
-└────────┘      │               └──────────────────────────────────────────────────┘ │                                                  
-                │                                                                    │                                                  
-                └────────────────────────────────────────────────────────────────────┘                                                  
+                ┌────────────────────────────────────────────────────────────────────┐
+                │                   Google Container Engine (GKE)                    │
+                │                                                                    │
+                │                                                                    │
+                │                                                                    │
+┌────────┐      │               ┌──────────────────────────────────────────────────┐ │
+│  REST  ├───┐  │               │                Kubernetes Cluster                │ │
+│ Client │   │  │               │                                                  │ │
+└────────┘   │  │ ┌──────────┐  │  ┌─────────────┐     ┌─────────┐      ┌────────┐ │ │
+             └──┼─▶ external │  │  │sync-gateway │     │couchbase│      │  etcd  │ │ │
+                │ │   load ──┼──┼─▶│   service   ├────▶│ service ├─────▶│service │ │ │
+┌────────┐   ┌──┼─▶ balancer │  │  │             │     │         │      │        │ │ │
+│  REST  │   │  │ └──────────┘  │  └─────────────┘     └─────────┘      └────────┘ │ │
+│ Client ├───┘  │               │                                                  │ │
+└────────┘      │               └──────────────────────────────────────────────────┘ │
+                │                                                                    │
+                └────────────────────────────────────────────────────────────────────┘
 
 ```
 
@@ -128,7 +128,7 @@ Set your default cluster:
 $ gcloud config set container/cluster couchbase-server
 ```
 
-# Couchbase Server + Sync Gateway 
+# Couchbase Server + Sync Gateway
 
 ## Clone couchbase-kubernetes
 
@@ -153,13 +153,13 @@ The downside with running a single etcd node within Kubernetes has the major dis
 Having said that, here's how to start the app-etcd Pod:
 
 ```
-$ gcloud alpha container kubectl create -f pods/app-etcd.yaml
+$ kubectl create -f pods/app-etcd.yaml
 ```
 
 Get the pod ip:
 
 ```
-$ gcloud alpha container kubectl get pod app-etcd
+$ kubectl get pod app-etcd
 ```
 
 you should see:
@@ -207,13 +207,13 @@ Replace `user:passw0rd` with the actual values you want to use.
 First the service:
 
 ```
-$ gcloud alpha container kubectl create -f services/couchbase-service.yaml
+$ kubectl create -f services/couchbase-service.yaml
 ```
 
 Then the replication controller:
 
 ```
-$ gcloud alpha container kubectl create -f replication-controllers/couchbase-server.yaml
+$ kubectl create -f replication-controllers/couchbase-server.yaml
 ```
 
 ## Setup interaction
@@ -225,29 +225,29 @@ Here is what is happening under the hood with the couchbase sidekicks to bootstr
 │  Couchbase  │              │  OS / libc  │                  │  Couchbase  │            │  Couchbase  │
 │  Sidekick   │              │             │                  │    Etcd     │            │   Server    │
 └──────┬──────┘              └──────┬──────┘                  └──────┬──────┘            └──────┬──────┘
-       │                            │                                │                          │       
-       │                            │                                │                          │       
-       │      Get IP of first       │                                │                          │       
-       ├────non-loopback iface──────▶                                │                          │       
-       │                            │                                │                          │       
-       │         Pod's IP           │                                │                          │       
-       ◀─────────address────────────┤                                │                          │       
-       │                            │                                │                          │       
-       │                            │             Create             │                          │       
-       ├────────────────────────────┼──────/couchbase-node-state─────▶                          │       
-       │                            │               dir              │                          │       
-       │                            │                                │                          │       
-       │                            │           Success OR           │                          │       
-       ◀────────────────────────────┼──────────────Fail──────────────┤                          │       
-       │                            │                                │                          │       
-       │                            │                                │         Create OR        │       
-       ├────────────────────────────┼────────────────────────────────┼────────────Join ─────────▶       
-       │                            │                                │          Cluster         │       
-       │                            │                                │                          │       
-       │                            │                                │     Add my pod IP under  │       
-       ├────────────────────────────┼────────────────────────────────┼───────cbs-node-state─────▶       
-       │                            │                                │                          │       
-       │                            │                                │                          │       
+       │                            │                                │                          │
+       │                            │                                │                          │
+       │      Get IP of first       │                                │                          │
+       ├────non-loopback iface──────▶                                │                          │
+       │                            │                                │                          │
+       │         Pod's IP           │                                │                          │
+       ◀─────────address────────────┤                                │                          │
+       │                            │                                │                          │
+       │                            │             Create             │                          │
+       ├────────────────────────────┼──────/couchbase-node-state─────▶                          │
+       │                            │               dir              │                          │
+       │                            │                                │                          │
+       │                            │           Success OR           │                          │
+       ◀────────────────────────────┼──────────────Fail──────────────┤                          │
+       │                            │                                │                          │
+       │                            │                                │         Create OR        │
+       ├────────────────────────────┼────────────────────────────────┼────────────Join ─────────▶
+       │                            │                                │          Cluster         │
+       │                            │                                │                          │
+       │                            │                                │     Add my pod IP under  │
+       ├────────────────────────────┼────────────────────────────────┼───────cbs-node-state─────▶
+       │                            │                                │                          │
+       │                            │                                │                          │
        ▼                            ▼                                ▼                          ▼
 
 ```
@@ -258,7 +258,7 @@ Here is what is happening under the hood with the couchbase sidekicks to bootstr
 First find the pod names that the replication controller spawned:
 
 ```
-$ gcloud alpha container kubectl get pods
+$ kubectl get pods
 ```
 
 Under the POD column in the resulting table formatted output, you should see:
@@ -271,10 +271,10 @@ couchbase-controller-j7yzf
 View the logs on all of the containers via:
 
 ```
-$ gcloud alpha container kubectl log couchbase-controller-ho6ta couchbase-server
-$ gcloud alpha container kubectl log couchbase-controller-ho6ta couchbase-sidekick
-$ gcloud alpha container kubectl log couchbase-controller-j7yzf couchbase-server
-$ gcloud alpha container kubectl log couchbase-controller-j7yzf couchbase-sidekick
+$ kubectl log couchbase-controller-ho6ta couchbase-server
+$ kubectl log couchbase-controller-ho6ta couchbase-sidekick
+$ kubectl log couchbase-controller-j7yzf couchbase-server
+$ kubectl log couchbase-controller-j7yzf couchbase-sidekick
 ```
 
 * Expected [couchbase-server logs](https://gist.github.com/tleyden/b9677515952fa054ddd2)
@@ -332,7 +332,7 @@ It provides a good example of setting up an application tier on top of Couchbase
 To kick off a Sync Gateway replica set, run:
 
 ```
-$ gcloud alpha container kubectl create -f replication-controllers/sync-gateway.yaml
+$ kubectl create -f replication-controllers/sync-gateway.yaml
 ```
 
 By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/tleyden/couchbase-kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **service** address: `http://couchbase-service:8091`
@@ -340,7 +340,7 @@ By default, it will use the sync gateway config in [`config/sync-gateway.config`
 ## Create a publicly exposed Sync Gateway service
 
 ```
-$ gcloud alpha container kubectl create -f services/sync-gateway.yaml
+$ kubectl create -f services/sync-gateway.yaml
 ```
 
 To find the IP address, run:
@@ -373,7 +373,7 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 ## TODO
 
 * Run this on a different Kubernetes environment other than GKE.
-* Improve the story when Pods go down.  Currently some manual intervention is needed to rebalance the cluster, ideally I'd like this to be fully automated.  (possibly via pod shutdown hook).  Currently: 
+* Improve the story when Pods go down.  Currently some manual intervention is needed to rebalance the cluster, ideally I'd like this to be fully automated.  (possibly via pod shutdown hook).  Currently:
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
     * To manually fix: fail over downed cb node, kick off rebalance
