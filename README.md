@@ -99,6 +99,19 @@ And set the zone:
 $ gcloud config set compute/zone us-central1-b
 ```
 
+## Install kubectl
+
+In order to avoid typing `gcloud alpha container kubectl` for every command, and just typing `kubectl`, you will need to install `kubectl`.  You will also need `jsawk`.
+
+On OSX, you can install these tools via:
+
+```
+$ brew install kubectl
+$ brew install jsawk
+```
+
+The rest of the document will assume you have `kubectl` installed.  Otherwise, you can run the `kubectl` commands by running `gcloud alpha container kubectl` instead.
+
 ## Create a new project
 
 Go to the [New Project](https://console.developers.google.com/project) page on Google Compute Engine and create a new project called `couchbase-container`.
