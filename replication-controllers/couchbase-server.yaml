@@ -21,8 +21,8 @@ spec:
         - name: couchbase-server
           image: couchbase/server:enterprise-4.0.0-dp
           ports:
-            - containerPort: 8091
-              hostPort: 8091
+            - name: webadministrationport
+              containerPort: 8091
         - name: couchbase-sidekick
           image: tleyden5iwx/couchbase-cluster-go:latest
           command:
@@ -32,5 +32,5 @@ spec:
             - start-couchbase-sidekick
             - --discover-local-ip
             - --etcd-servers
-            - http://etcd.pod.ip:2379
-
+            - http://$APP_ETCD_SERVICE_SERVICE_HOST:$APP_ETCD_SERVICE_SERVICE_PORT_CLIENTPORT
+            # Can also use http://app-etcd-service.kubernetes.local

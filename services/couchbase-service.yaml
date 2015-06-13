@@ -4,34 +4,32 @@ metadata:
   name: couchbase-service
 spec:
   ports:  # see http://docs.couchbase.com/admin/admin/Install/install-networkPorts.html
-    - port: 8091 
+    - port: 8091
       name: webadministrationport
-      targetPort: 8091
-      protocol: TCP
-    - port: 8092 
+      targetPort: webadministrationport
+      # default range 30000-32767
+      nodePort: 30891
+    - port: 8092
       name: couchbaseapiport
       targetPort: 8092
-      protocol: TCP
+      nodePort: 30892
     - port: 11207
       name: internalexternalbucketssl
       targetPort: 11207
-      protocol: TCP
     - port: 11210
       name: internalexternalbucket
       targetPort: 11210
-      protocol: TCP
     - port: 11211
       name: clientinterfaceproxy
       targetPort: 11211
-      protocol: TCP
     - port: 18091
       name: internalresthttps
       targetPort: 18091
-      protocol: TCP
     - port: 18092
       name: internalcapihttps
       targetPort: 18092
-      protocol: TCP
+  # type can be changed to "LoadBalancer" to automatically create an externally loadbalanced endpoint on GCE/AWS
+  type: "NodePort"
   # just like the selector in the replication controller,
   # but this time it identifies the set of pods to load balance
   # traffic to.

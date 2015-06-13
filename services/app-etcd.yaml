@@ -6,11 +6,9 @@ spec:
   ports:
     - port: 2379
       name: clientport
-      targetPort: 2379
-      protocol: TCP
+      targetPort: listen-client-port
     - port: 2380
       name: servertoserverport
-      targetPort: 2380
-      protocol: TCP
+      targetPort: peer-port
   selector:
     name: app-etcd

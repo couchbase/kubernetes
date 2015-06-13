@@ -2,6 +2,8 @@ apiVersion: v1beta3
 kind: Pod
 metadata:
   name: app-etcd
+  labels:
+    name: app-etcd
 spec:
   containers:
     - name: app-etcd
@@ -13,9 +15,7 @@ spec:
         - -advertise-client-urls
         - http://{{.LOCAL_IP}}:2379
       ports:
-        -
+        - name: listen-client-port
           containerPort: 2379
-          hostPort: 2379
-        -
+        - name: peer-port
           containerPort: 2380
-          hostPort: 2380
