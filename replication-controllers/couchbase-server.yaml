@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: couchbase-server
-          image: couchbase/server:enterprise-4.0.0-dp
+          image: couchbase/server:enterprise-4.0.0-beta
           ports:
             - containerPort: 8091
               hostPort: 8091
