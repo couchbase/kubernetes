@@ -294,10 +294,10 @@ couchbase-controller-j7yzf
 View the logs on all of the containers via:
 
 ```
-$ kubectl log couchbase-controller-ho6ta couchbase-server
-$ kubectl log couchbase-controller-ho6ta couchbase-sidekick
-$ kubectl log couchbase-controller-j7yzf couchbase-server
-$ kubectl log couchbase-controller-j7yzf couchbase-sidekick
+$ kubectl logs couchbase-controller-ho6ta couchbase-server
+$ kubectl logs couchbase-controller-ho6ta couchbase-sidekick
+$ kubectl logs couchbase-controller-j7yzf couchbase-server
+$ kubectl logs couchbase-controller-j7yzf couchbase-sidekick
 ```
 
 * Expected [couchbase-server logs](https://gist.github.com/tleyden/b9677515952fa054ddd2)
