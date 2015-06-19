@@ -109,8 +109,18 @@ On OSX, you can install these tools via:
 $ brew install kubectl
 $ brew install jsawk
 ```
-
 The rest of the document will assume you have `kubectl` installed.  Otherwise, you can run the `kubectl` commands by running `gcloud alpha container kubectl` instead.
+
+## Pass credentials to kubectl
+
+If your cluster was not created with the gcloud alpha container command (i.e. you created it through the Developers Console), or you created it with gcloud from a different machine, you'll need to run an additional command to make your credentials available to kubectl. Your default zone and cluster must be already set or should be passed as flags to the command.
+
+```
+$ gcloud alpha container get-credentials
+    [--zone ZONE] [--cluster CLUSTER_NAME]
+```
+
+You only need to run this once per cluster per machine (e.g. if you created your cluster from your laptop, you'll need to run get-credentials on your desktop before you're able to access the cluster from that machine.)
 
 ## Create a new project
 
