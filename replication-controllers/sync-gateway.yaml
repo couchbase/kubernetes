@@ -22,7 +22,7 @@ spec:
           image: couchbase/sync-gateway
           command:
             - sync_gateway
-            - { "log": ["*"], "databases": { "db": { "server": "http://$COUCHBASE_SERVER_SERVICE_HOST:8091", "bucket": "default", "users": { "GUEST": { "disabled": false, "admin_channels": ["*"] } } } } }
+            - https://raw.githubusercontent.com/couchbase/kubernetes/master/config/sync-gateway.config
           ports:
             - containerPort: 4984
             - containerPort: 4985
