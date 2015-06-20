@@ -144,6 +144,7 @@ $ gcloud alpha container clusters create couchbase-server \
     --num-nodes 2 \
     --machine-type g1-small
 ```
+*Don't use* `--machine-type f1-micro` *as it isn't powerful enough to complete the bootstrap process*
 
 Set your default cluster:
 
