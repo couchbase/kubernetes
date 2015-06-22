@@ -26,6 +26,8 @@ spec:
         - name: couchbase-sidekick
           image: tleyden5iwx/couchbase-cluster-go:latest
           command:
+            - /bin/sh
+            - -c
             - update-wrapper
             - --skip-etcd-check
             - couchbase-cluster

@@ -21,6 +21,8 @@ spec:
         - name: sync-gateway
           image: couchbase/sync-gateway
           command:
+            - /bin/sh
+            - -c
             - sync_gateway
             - https://raw.githubusercontent.com/couchbase/kubernetes/master/config/sync-gateway.config
           ports:
