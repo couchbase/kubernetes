@@ -21,16 +21,8 @@ spec:
         - name: sync-gateway
           image: couchbase/sync-gateway
           command:
-            - /bin/sh
-            - -c
-            - wget -O /sync-gateway-data/sync-gateway.config https://raw.githubusercontent.com/couchbase/kubernetes/master/config/sync-gateway.config && sed -i "s/\$COUCHBASE_SERVICE_SERVICE_HOST/$COUCHBASE_SERVICE_SERVICE_HOST/" /sync-gateway-data/sync-gateway.config && sync_gateway /sync-gateway-data/sync-gateway.config
-            rts:
+            - sync_gateway
+            - https://raw.githubusercontent.com/couchbase/kubernetes/master/config/sync-gateway.config
+          ports:
             - containerPort: 4984
             - containerPort: 4985
-          volumeMounts:
-            - mountPath: /sync-gateway-data
-              name: data
-      volumes:
-        - name: data
-          emptyDir: {}
-
