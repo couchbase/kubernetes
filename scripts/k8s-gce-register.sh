@@ -42,10 +42,10 @@ kubernetes/cluster/kubectl.sh create -f services/couchbase-service.yaml
 
 # firewall and forwarding-rules
 printf "\nCreating firewall and forwarding-rules ...\n"
-gcloud compute firewall-rules create cbs-8091 --allow tcp:30891 --target-tags kubernetes-minion
+gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags kubernetes-minion
 
 # Done.
 CBNODEIP=$(gcloud compute instances describe $NODE1 --format json | jsawk 'return this.networkInterfaces[0].accessConfigs[0].natIP')
 
 # Can goto any k8s minion and get there, or go through the master
-printf "\nDone\n\n. Go to http://$CBNODEIP:30891\n\n or \n http://<k8smaster>:8080/api/v1beta3/proxy/namespaces/default/services/couchbase-service:8091/".
+printf "\nDone\n\n. Go to http://$CBNODEIP:8091\n\n or \n http://<k8smaster>:8080/api/v1beta3/proxy/namespaces/default/services/couchbase-service:8091/".
