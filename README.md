@@ -161,7 +161,7 @@ $ git clone https://github.com/couchbase/kubernetes.git couchbase-kubernetes
 $ cd couchbase-kubernetes
 ```
 
-## Start etcd Pod
+## Start etcd 
 
 Although Kubernetes runs its own etcd, this is not accessible to applications running within Kubernetes.  The Couchbase sidekick containers require etcd to discover Couchbase Server Nodes and bootstrap the cluster.
 
@@ -174,9 +174,10 @@ Running your own separate etcd cluster is outside the scope of this document, so
 
 The downside with running a single etcd node within Kubernetes has the major disadvantage of being a single point of failure, nor will it handle pod restarts of the etcd pod -- if that pod is restarted and gets a new ip address, then future couchbase nodes that are started won't be able to find etcd and auto-join the cluster.
 
-Having said that, here's how to start the app-etcd Pod:
+Having said that, here's how to start the app-etcd service and pod:
 
 ```
+$ kubectl create -f services/app-etcd.yaml
 $ kubectl create -f pods/app-etcd.yaml
 ```
 
@@ -193,20 +194,7 @@ POD        IP            CONTAINER(S)   IMAGE(S)                     HOST       
 app-etcd   10.248.1.30   app-etcd       tleyden5iwx/etcd-discovery   k8s-couchbase-server-node-2/104..  ...
 ```
 
-Make a note of:
-
-* the Pod IP (10.248.1.30 in above example).  Side note -- app-etcd *should* be wrapped up a in a service, but that is still in progress.  See this [google groups post](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J).
-* the Host it's running on (eg, k8s-couchbase-server-node-2)
-
-## Modify Couchbase Server Replication Controller
-
-Modify your couchbase-server replication controller to have the etcd Pod IP:
-
-```
-$ sed -i 's/etcd.pod.ip/10.248.1.30/' replication-controllers/couchbase-server.yaml
-```
-
-Replacing `10.248.1.30` with your actual Pod IP found in the previous step.
+Make a note of the Host it's running on (eg, k8s-couchbase-server-node-2)
 
 ## Add Couchbase Server Admin credentials in etcd
 
@@ -414,3 +402,5 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 * https://cloud.google.com/container-engine/docs/hello-wordpress
 
 * https://cloud.google.com/container-engine/docs/guestbook
+
+* [google groups post regarding etcd service](https://groups.google.com/d/msg/google-containers/rFIFD6Y0_Ew/GeDa8ZuPWd8J).
