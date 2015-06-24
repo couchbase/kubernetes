@@ -79,6 +79,7 @@ Go to the following link in your browser:
 ... etc
 ```
 
+
 **Standard method**
 
 ```
@@ -214,6 +215,22 @@ root@k8s~$ curl -L http://10.248.1.30:2379/v2/keys/couchbase.com/userpass -X PUT
 
 Replace `user:passw0rd` with the actual values you want to use.  
 
+## Identify hosts on which couchbase will run
+
+If you intend to host additional services besides couchbase in your cluster, we recommend isolating couchbase
+to particular hosts. You can do this using Kubernetes `labels` and `nodeSelector`. Identify your node and apply a label.
+
+```
+$ kubectl label nodes <name> role=couchbase
+$ kubectl label nodes <name> role=couchbase
+```
+
+The following nodeSelector in the replication controller will ensure that the server pods only run on the hosts designated for couchbase.
+
+        nodeSelector:
+          role: couchbase
+
+
 ## Kick off Service and Replication Controller for couchbase-server
 
 First the service:
@@ -227,6 +244,7 @@ Then the replication controller:
 ```
 $ kubectl create -f replication-controllers/couchbase-server.yaml
 ```
+
 
 ## Setup interaction
 
