@@ -7,29 +7,6 @@ spec:
     - port: 8091
       name: webadministrationport
       targetPort: webadministrationport
-      # default range 30000-32767
-      # nodePort: 30891
-    - port: 8092
-      name: couchbaseapiport
-      targetPort: 8092
-      nodePort: 30892
-    - port: 11207
-      name: internalexternalbucketssl
-      targetPort: 11207
-    - port: 11210
-      name: internalexternalbucket
-      targetPort: 11210
-    - port: 11211
-      name: clientinterfaceproxy
-      targetPort: 11211
-    - port: 18091
-      name: internalresthttps
-      targetPort: 18091
-    - port: 18092
-      name: internalcapihttps
-      targetPort: 18092
-  # type can be changed to "LoadBalancer" to automatically create an externally loadbalanced endpoint on GCE/AWS
-  # type can be changed to "NodePort" to automatically create an externally loadbalanced endpoint on GCE/AWS
   type: "LoadBalancer"
   # just like the selector in the replication controller,
   # but this time it identifies the set of pods to load balance
