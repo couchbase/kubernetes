@@ -1,14 +1,14 @@
-apiVersion: v1beta3
+apiVersion: v1
 kind: Service
 metadata:
   name: app-etcd-service
 spec:
   ports:
     - port: 2379
-      name: clientport
-      targetPort: listen-client-port
+      name: client
+      targetPort: client
     - port: 2380
-      name: servertoserverport
-      targetPort: peer-port
+      name: peer
+      targetPort: peer
   selector:
     name: app-etcd

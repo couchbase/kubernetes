@@ -198,7 +198,7 @@ Make a note of the Host it's running on (eg, k8s-couchbase-server-node-2)
 
 ## Add Couchbase Server Admin credentials in etcd
 
-First, you will need to ssh into the host node where the app-etcd pod is running:
+First, you will need to ssh into the host node where the app-etcd pod is running (or any other node in the cluster):
 
 ```
 $ gcloud compute ssh k8s-couchbase-server-node-2
@@ -212,21 +212,24 @@ Next, use curl to add a value for the `/couchbase.com/userpass` key in etcd.
 root@k8s~$ curl -L http://10.248.1.30:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
 ```
 
-Replace `user:passw0rd` with the actual values you want to use.  
+Replace `user:passw0rd` with the actual values you want to use and `exit` after running the command.  
 
 ## Kick off Service and Replication Controller for couchbase-server
 
-First the service:
+First the replication controllers:
+```
+$ kubectl create -f replication-controllers/couchbase-admin-server.yaml
+$ kubectl create -f replication-controllers/couchbase-server.yaml
+```
+
+Then the services:
 
 ```
 $ kubectl create -f services/couchbase-service.yaml
+$ kubectl create -f services/couchbase-admin-service.yaml
 ```
 
-Then the replication controller:
-
-```
-$ kubectl create -f replication-controllers/couchbase-server.yaml
-```
+The `couchbase-admin` pod and service creates a couchbase server with an externally accessible admin ui. The admin replication controller (named `couchbase-admin-controller`) should never be scaled passed 1. Instead the `couchbase-controller` can be scaled to any desired number of replicas. The `couchbase-service` is configured to route traffic to both the `couchbase-admin-server` pod and the `couchbase-server` pods. 
 
 ## Setup interaction
 
@@ -273,18 +276,18 @@ First find the pod names that the replication controller spawned:
 $ kubectl get pods
 ```
 
-Under the POD column in the resulting table formatted output, you should see:
+Under the POD column in the resulting table formatted output, you should see pods similar to:
 
 ```
-couchbase-controller-ho6ta
+couchbase-admin-controller-ho6ta
 couchbase-controller-j7yzf
 ```
 
 View the logs on all of the containers via:
 
 ```
-$ kubectl logs couchbase-controller-ho6ta couchbase-server
-$ kubectl logs couchbase-controller-ho6ta couchbase-sidekick
+$ kubectl logs couchbase-admin-controller-ho6ta couchbase-server
+$ kubectl logs couchbase-admin-controller-ho6ta couchbase-sidekick
 $ kubectl logs couchbase-controller-j7yzf couchbase-server
 $ kubectl logs couchbase-controller-j7yzf couchbase-sidekick
 ```
@@ -296,40 +299,31 @@ $ kubectl logs couchbase-controller-j7yzf couchbase-sidekick
 
 In order to access port 8091 from the outside world, you will need to add firewall rules to expose it.  While this isn't strictly necessary, it make administration much easier.  Rather than allowing blanket access, it would be possible to lock down access to a specific ip or range of ip addresses.
 
-**Find instances**
+**Set GKE Firewall Rules**
 
 ```
-$ gcloud compute instances list
+$ gcloud compute firewall-rules list
 ```
 
 You should see:
 
 ```
-NAME                        ZONE          MACHINE_TYPE INTERNAL_IP    EXTERNAL_IP    STATUS
-k8s-couchbase-server-master us-central1-b g1-small     10.240.190.47  104.197.76.201 RUNNING
-k8s-couchbase-server-node-1 us-central1-b g1-small     10.240.23.227  104.197.79.56  RUNNING
-k8s-couchbase-server-node-2 us-central1-b g1-small     10.240.164.118 146.148.57.164 RUNNING
+NAME                              NETWORK SRC_RANGES    RULES                         TARGET_TAGS
+gke-couchbase-server-6d7e2ed1-all default 10.0.0.0/14   sctp,tcp,udp,icmp,esp,ah
+gke-couchbase-server-6d7e2ed1-vms default 10.240.0.0/16 tcp:1-65535,udp:1-65535,icmp  gke-couchbase-server-6d7e2ed1-node
 ```
 
-The two we care about are `k8s-couchbase-server-node-1` and `k8s-couchbase-server-node-2`.
+The thing we care about is the `TARGET_TAG` for the `gke-couchbase-server-6d7e2ed1-vms`. Copy the value, which in this case is `gke-couchbase-server-6d7e2ed1-node`
 
-**First couchbase server node**
-
-```
-$ gcloud compute instances add-tags k8s-couchbase-server-node-1 --tags cb1
-$ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags cb1
-```
-
-**Second couchbase server node**
+Then create the firewall rule by running the command below (replacing `gke-couchbase-server-6d7e2ed1-node`)
 
 ```
-$ gcloud compute instances add-tags k8s-couchbase-server-node-2 --tags cb2
-$ gcloud compute firewall-rules create cbs2-8091 --allow tcp:8091 --target-tags cb2
+$ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags gke-couchbase-server-6d7e2ed1-node
 ```
 
-At this point, you should find the public IP of either one your from the `gcloud compute instances list` command and looking for the EXTERNAL_IP.
+At this point, you should find the public IP of your the couchbase admin service from the `kubectl describe service couchbase-admin-service` command and looking for the `LoadBalancer Ingress` value.
 
-Now visit public-ip:8091 in your browser, and you should see:
+Now visit `public-ip:8091` in your browser, and you should see:
 
 ![Couchbase Login Screen](http://tleyden-misc.s3.amazonaws.com/blog_images/couchbase_cluster_login.png)
 
@@ -347,7 +341,7 @@ To kick off a Sync Gateway replica set, run:
 $ kubectl create -f replication-controllers/sync-gateway.yaml
 ```
 
-By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/tleyden/couchbase-kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **service** address: `http://couchbase-service:8091`
+By default, it will use the sync gateway config in [`config/sync-gateway.config`](https://github.com/couchbase/kubernetes/blob/master/config/sync-gateway.config) -- note that for the IP address of Couchbase Server, it uses the **dns service** address in the `default` namespace: `http://couchbase-service.default.svc.cluster.local:8091`. SkyDNS is enabled by default in GKE/GCE, but if you are not running SkyDNS, then you will need to change the config to the service ip shown in `kubectl get service couchbase-service`.
 
 ## Create a publicly exposed Sync Gateway service
 
@@ -355,17 +349,24 @@ By default, it will use the sync gateway config in [`config/sync-gateway.config`
 $ kubectl create -f services/sync-gateway.yaml
 ```
 
-To find the IP address, run:
+Then create the firewall rule by running the command below (replacing `gke-couchbase-server-6d7e2ed1-node`)
 
 ```
-$ gcloud compute forwarding-rules list
+$ gcloud compute firewall-rules create cbs-4984 --allow tcp:4984 --target-tags gke-couchbase-server-6d7e2ed1-node
+```
+
+To find the IP address after the pod is running, run:
+
+```
+$ kubectl describe service sync-gateway
 ```
 
 and you should see:
 
 ```
-NAME      REGION      IP_ADDRESS    IP_PROTOCOL TARGET
-aa94f7752 us-central1 104.197.15.37 TCP         us-central1/targetPools/aa94f7752
+...
+LoadBalancer Ingress: 104.197.15.37
+...
 ```
 
 where `104.197.15.37` is a publicly accessible IP.  To verify, from your local workstation or any machine connected to the internet, wait for a few minutes to give it a chance to startup, and then run:
@@ -389,7 +390,7 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
     * To manually fix: fail over downed cb node, kick off rebalance
-* Improve the story on the "app-etcd" (I need my own etcd running to bootstrap the Couchbase cluster with, since the Kubernetes etcd is off-limits).  The instructions currently make the user go find the pod IP where etcd is running, and enter that in their config.  I'm hoping to get feedback from Kelsey or others on this [google groups post](https://groups.google.com/forum/#!msg/google-containers/rFIFD6Y0_Ew/PlYh0z7weLEJ) to get etcd wrapped up into a Kubernetes service.
+* Improve the story on the "app-etcd" (I need my own etcd running to bootstrap the Couchbase cluster with, since the Kubernetes etcd is off-limits).
 * Look into host mounted volumes
 
 
