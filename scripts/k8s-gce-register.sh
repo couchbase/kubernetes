@@ -42,6 +42,7 @@ kubernetes/cluster/kubectl.sh create -f services/couchbase-admin-service.yaml
 # firewall and forwarding-rules
 printf "\nCreating firewall and forwarding-rules ...\n"
 gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags kubernetes-minion
+gcloud compute firewall-rules create cbs-4984 --allow tcp:4984 --target-tags kubernetes-minion
 
 # Done.
 CBADMINIP=$(kubernetes/cluster/kubectl.sh get -o json service couchbase-admin-service | jsawk 'return this.status.loadBalancer.ingress[0].ip')
