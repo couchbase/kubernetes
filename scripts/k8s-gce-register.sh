@@ -17,7 +17,7 @@ printf "\nCreating pods ...\n"
 kubernetes/cluster/kubectl.sh create -f pods/app-etcd.yaml
 
 printf "\nWaiting for cluster to initialise ...\n"
-# sleep 20
+sleep 20
 kubernetes/cluster/kubectl.sh create -f services/app-etcd.yaml
 
 # config file adjustments
