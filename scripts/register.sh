@@ -1,9 +1,9 @@
 #!/bin/bash
 
-PROJECT_ID=erudite-river-101207
+PROJECT_ID=[your project id]
 ZONE=us-central1-f
 REGION=us-central1
-CLUSTER=socius-data
+CLUSTER=[your cluster name]
 
 CBUSER=Administrator
 CBPASSWORD=passw0rd
