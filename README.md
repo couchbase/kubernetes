@@ -87,10 +87,10 @@ $ curl https://sdk.cloud.google.com | bash
 
 ## Setup cloud-sdk
 
-Now enable the alpha components:
+Now enable the beta components:
 
 ```
-$ gcloud components update alpha
+$ gcloud components update beta
 ```
 
 And set the zone:
