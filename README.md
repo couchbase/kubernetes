@@ -5,7 +5,7 @@ Here are instructions on getting Couchbase Server and Couchbase Sync Gateway run
 
 ```
                 ┌────────────────────────────────────────────────────────────────────┐
-                │                   Google Container Engine (GKE)                    │
+                │                   Cloud Provider / Bare Metal                      │
                 │                                                                    │
                 │                                                                    │
                 │                                                                    │
@@ -63,94 +63,14 @@ Here are instructions on getting Couchbase Server and Couchbase Sync Gateway run
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-# Google Container Engine / Kubernetes setup
+# Kubernetes cluster setup
 
-## Install cloud-sdk
+Setting up the Kubernetes cluster is specific to the cloud provider:
 
-**Via docker container**
-
-I installed the cloud-sdk within a Docker container in order to avoid worrying about getting into PDH (Python Dependency Hell).
-
-```
-$ docker pull google/cloud-sdk
-$ docker run -ti google/cloud-sdk /bin/bash
-# gcloud auth login
-Go to the following link in your browser:
-... etc
-```
-
-**Standard method**
-
-```
-$ curl https://sdk.cloud.google.com | bash
-```
-
-## Setup cloud-sdk
-
-Now enable the beta components:
-
-```
-$ gcloud components update beta
-```
-
-And set the zone:
-
-```
-$ gcloud config set compute/zone us-central1-b
-```
-
-## Install kubectl
-
-In order to avoid typing `gcloud alpha container kubectl` for every command, and just typing `kubectl`, you will need to install `kubectl`.  You will also need `jsawk`.
-
-On OSX, you can install these tools via:
-
-```
-$ brew install kubectl
-$ brew install jsawk
-```
-The rest of the document will assume you have `kubectl` installed.  Otherwise, you can run the `kubectl` commands by running `gcloud alpha container kubectl` instead.
-
-## Pass credentials to kubectl
-
-If your cluster was not created with the gcloud alpha container command (i.e. you created it through the Developers Console), or you created it with gcloud from a different machine, you'll need to run an additional command to make your credentials available to kubectl. Your default zone and cluster must be already set or should be passed as flags to the command.
-
-```
-$ gcloud alpha container get-credentials
-    [--zone ZONE] [--cluster CLUSTER_NAME]
-```
-
-You only need to run this once per cluster per machine (e.g. if you created your cluster from your laptop, you'll need to run get-credentials on your desktop before you're able to access the cluster from that machine.)
-
-## Create a new project
-
-Go to the [New Project](https://console.developers.google.com/project) page on Google Compute Engine and create a new project called `couchbase-container`.
-
-```
-$ gcloud config set project couchbase-container
-```
-
-Verify this worked by trying to list the instances (should be empty)
-
-```
-$ gcloud compute instances list
-NAME ZONE MACHINE_TYPE INTERNAL_IP EXTERNAL_IP STATUS
-```
-
-## Create a cluster
-
-```
-$ gcloud alpha container clusters create couchbase-server \
-    --num-nodes 2 \
-    --machine-type g1-small
-```
-*Don't use* `--machine-type f1-micro` *as it isn't powerful enough to complete the bootstrap process*
-
-Set your default cluster:
-
-```
-$ gcloud config set container/cluster couchbase-server
-```
+* [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE))
+* OpenShift3
+* AWS
+* Bare Metal
 
 # Couchbase Server + Sync Gateway
 
@@ -174,7 +94,7 @@ Running your own separate etcd cluster is outside the scope of this document, so
 
 The downside with running a single etcd node within Kubernetes has the major disadvantage of being a single point of failure, nor will it handle pod restarts of the etcd pod -- if that pod is restarted and gets a new ip address, then future couchbase nodes that are started won't be able to find etcd and auto-join the cluster.
 
-Having said that, here's how to start the app-etcd service and pod:
+Here's how to start the app-etcd service and pod:
 
 ```
 $ kubectl create -f services/app-etcd.yaml
@@ -184,35 +104,48 @@ $ kubectl create -f pods/app-etcd.yaml
 Get the pod ip:
 
 ```
-$ kubectl get pod app-etcd
+$ kubectl describe pod app-etcd
 ```
 
 you should see:
 
 ```
-POD        IP            CONTAINER(S)   IMAGE(S)                     HOST                               ...
-app-etcd   10.248.1.30   app-etcd       tleyden5iwx/etcd-discovery   k8s-couchbase-server-node-2/104..  ...
+Name:				app-etcd
+Namespace:			default
+Image(s):			tleyden5iwx/etcd-discovery
+Node:				gke-couchbase-server-648006db-node-qgu2/10.240.158.17
+Labels:				name=app-etcd
+Status:				Running
+Reason:
+Message:
+IP:				10.248.1.5
 ```
 
-Make a note of the Host it's running on (eg, k8s-couchbase-server-node-2)
+Make a note of the Node it's running on (eg, gke-couchbase-server-648006db-node-qgu2) as well as the Pod IP (10.248.1.5)
 
 ## Add Couchbase Server Admin credentials in etcd
 
 First, you will need to ssh into the host node where the app-etcd pod is running (or any other node in the cluster):
 
 ```
-$ gcloud compute ssh k8s-couchbase-server-node-2
+$ gcloud compute ssh gke-couchbase-server-648006db-node-qgu2
 ```
 
-Replace `k8s-couchbase-server-node-2` with the host found in the previous step.
+Replace `gcloud compute ssh gke-couchbase-server-648006db-node-qgu2` with the host found in the previous step.
 
-Next, use curl to add a value for the `/couchbase.com/userpass` key in etcd.  
+Next, use curl to add a value for the `/couchbase.com/userpass` key in etcd.  Use the Pod IP found above.  
 
 ```
-root@k8s~$ curl -L http://10.248.1.30:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
+root@k8s~$ curl -L http://10.248.1.5:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
 ```
 
-Replace `user:passw0rd` with the actual values you want to use and `exit` after running the command.  
+Replace `user:passw0rd` with the actual values you want to use.
+
+After you run the command, exit the SSH session to get back to your workstation.
+
+```
+$ exit 
+```
 
 ## Kick off Service and Replication Controller for couchbase-server
 
@@ -295,39 +228,12 @@ $ kubectl logs couchbase-controller-j7yzf couchbase-sidekick
 * Expected [couchbase-server logs](https://gist.github.com/tleyden/b9677515952fa054ddd2)
 * Expected [couchbase-sidekick logs](https://gist.github.com/tleyden/269679e71131b7e8536e)
 
-## Expose port 8091 to public IP
 
-In order to access port 8091 from the outside world, you will need to add firewall rules to expose it.  While this isn't strictly necessary, it make administration much easier.  Rather than allowing blanket access, it would be possible to lock down access to a specific ip or range of ip addresses.
+## Connect to Couchbase Server Admin UI
 
-**Set GKE Firewall Rules**
+This is platform specific.  
 
-```
-$ gcloud compute firewall-rules list
-```
-
-You should see:
-
-```
-NAME                              NETWORK SRC_RANGES    RULES                         TARGET_TAGS
-gke-couchbase-server-6d7e2ed1-all default 10.0.0.0/14   sctp,tcp,udp,icmp,esp,ah
-gke-couchbase-server-6d7e2ed1-vms default 10.240.0.0/16 tcp:1-65535,udp:1-65535,icmp  gke-couchbase-server-6d7e2ed1-node
-```
-
-The thing we care about is the `TARGET_TAG` for the `gke-couchbase-server-6d7e2ed1-vms`. Copy the value, which in this case is `gke-couchbase-server-6d7e2ed1-node`
-
-Then create the firewall rule by running the command below (replacing `gke-couchbase-server-6d7e2ed1-node`)
-
-```
-$ gcloud compute firewall-rules create cbs-8091 --allow tcp:8091 --target-tags gke-couchbase-server-6d7e2ed1-node
-```
-
-At this point, you should find the public IP of your the couchbase admin service from the `kubectl describe service couchbase-admin-service` command and looking for the `LoadBalancer Ingress` value.
-
-Now visit `public-ip:8091` in your browser, and you should see:
-
-![Couchbase Login Screen](http://tleyden-misc.s3.amazonaws.com/blog_images/couchbase_cluster_login.png)
-
-Login with the credentials used above in place of `user:passw0rd`
+Currently there are only instructions for [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE))
 
 ## Create a Sync Gateway replication set
 
@@ -347,12 +253,6 @@ By default, it will use the sync gateway config in [`config/sync-gateway.config`
 
 ```
 $ kubectl create -f services/sync-gateway.yaml
-```
-
-Then create the firewall rule by running the command below (replacing `gke-couchbase-server-6d7e2ed1-node`)
-
-```
-$ gcloud compute firewall-rules create cbs-4984 --allow tcp:4984 --target-tags gke-couchbase-server-6d7e2ed1-node
 ```
 
 To find the IP address after the pod is running, run:
@@ -385,13 +285,13 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 
 ## TODO
 
-* Run this on a different Kubernetes environment other than GKE.
+* Documentation on how to run on a different Kubernetes environment other than GKE. (eg, AWS)
 * Improve the story when Pods go down.  Currently some manual intervention is needed to rebalance the cluster, ideally I'd like this to be fully automated.  (possibly via pod shutdown hook).  Currently:
     * New pod comes up with different ip
     * Rebalance fails because there are now 3 couchbase server nodes, one which is unreachable
     * To manually fix: fail over downed cb node, kick off rebalance
-* Improve the story on the "app-etcd" (I need my own etcd running to bootstrap the Couchbase cluster with, since the Kubernetes etcd is off-limits).
-* Look into host mounted volumes
+* Improve the story surrounding etcd
+* Look into persistent data storage host mounted volumes
 
 
 ## References
