@@ -1,78 +1,15 @@
 
 Here are instructions on getting Couchbase Server and Couchbase Sync Gateway running under Kubernetes on GKE (Google Container Engine).  
 
-# Logical Architecture
-
-```
-                ┌────────────────────────────────────────────────────────────────────┐
-                │                   Cloud Provider / Bare Metal                      │
-                │                                                                    │
-                │                                                                    │
-                │                                                                    │
-┌────────┐      │               ┌──────────────────────────────────────────────────┐ │
-│  REST  ├───┐  │               │                Kubernetes Cluster                │ │
-│ Client │   │  │               │                                                  │ │
-└────────┘   │  │ ┌──────────┐  │  ┌─────────────┐     ┌─────────┐      ┌────────┐ │ │
-             └──┼─▶ external │  │  │sync-gateway │     │couchbase│      │  etcd  │ │ │
-                │ │   load ──┼──┼─▶│   service   ├────▶│ service ├─────▶│service │ │ │
-┌────────┐   ┌──┼─▶ balancer │  │  │             │     │         │      │        │ │ │
-│  REST  │   │  │ └──────────┘  │  └─────────────┘     └─────────┘      └────────┘ │ │
-│ Client ├───┘  │               │                                                  │ │
-└────────┘      │               └──────────────────────────────────────────────────┘ │
-                │                                                                    │
-                └────────────────────────────────────────────────────────────────────┘
-
-```
-
-* Only the Sync Gateway (application tier) service is exposed to the outside world.
-* Sync Gateway uses the Couchbase Server service as it's data storage tier
-* The Couchbase Server service is only accessible from within the Kubernetes cluster, and is not exposed to the outside world.
-* The etcd service is used by "sidekicks" that run in the Couchbase Server pod to bootstrap the cluster.  Likewise, it is only accessible within the cluster.
-
-# Physical Architecture
-
-```
-
-┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                        Kubernetes Cluster                                                        │
-│                                                                                                                                  │
-│ ┌──────────────────────────────────────────────────────────────────────┐  ┌──────────────────────────────────────────────────┐   │
-│ │                          Kubernetes Node 1                           │  │                Kubernetes Node 2                 │   │
-│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   ┌ ─ ─ ─ ─ ─ ─ ─ ─  │  │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │   │
-│ │          Couchbase ReplicaSet (count=2)        │   CB etcd service │ │  │          Couchbase ReplicaSet (count=2)        │ │   │
-│ │ │ ┌──────────────────────────────────────────┐    │                  │  │ │ ┌──────────────────────────────────────────┐   │   │
-│ │   │        couchbase-replicaset-pod-1        │ │    ┌────────────┐ │ │  │   │        couchbase-replicaset-pod-2        │ │ │   │
-│ │ │ │ ┌─────────────────┐ ┌───────────────────┐│    │ │etcd pod    │   │  │ │ │ ┌─────────────────┐ ┌───────────────────┐│   │   │
-│ │   │ │couchbase-server │ │couchbase-sidekick ││ │    │            │ │ │  │   │ │couchbase-server │ │couchbase-sidekick ││ │ │   │
-│ │ │ │ │    container    │ │     container     ││    │ │ ┌────────┐ │   │  │ │ │ │    container    │ │     container     ││   │   │
-│ │   │ └─────────────────┘ └───────────────────┘│ │    │ │etcd    │ │ │ │  │   │ └─────────────────┘ └───────────────────┘│ │ │   │
-│ │ │ └──────────────────────────────────────────┘    │ │ │containe│ │   │  │ │ └──────────────────────────────────────────┘   │   │
-│ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘    │ │r       │ │ │ │  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │   │
-│ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │ │ └────────┘ │   │  │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │   │
-│ │        Sync Gateway ReplicaSet (count=2)       │    └────────────┘ │ │  │        Sync Gateway ReplicaSet (count=2)       │ │   │
-│ │ │ ┌──────────────────────────────────────────┐    └ ─ ─ ─ ─ ─ ─ ─ ─  │  │ │ ┌──────────────────────────────────────────┐   │   │
-│ │   │         sync-gw-replicaset-pod-1         │ │                     │  │   │         sync-gw-replicaset-pod-2         │ │ │   │
-│ │ │ │ ┌──────────────────────────────────────┐ │                       │  │ │ │ ┌──────────────────────────────────────┐ │   │   │
-│ │   │ │             sync gateway             │ │ │                     │  │   │ │             sync gateway             │ │ │ │   │
-│ │ │ │ │              container               │ │                       │  │ │ │ │              container               │ │   │   │
-│ │   │ └──────────────────────────────────────┘ │ │                     │  │   │ └──────────────────────────────────────┘ │ │ │   │
-│ │ │ └──────────────────────────────────────────┘                       │  │ │ └──────────────────────────────────────────┘   │   │
-│ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘                     │  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │   │
-│ └──────────────────────────────────────────────────────────────────────┘  └──────────────────────────────────────────────────┘   │
-│                                                                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+To get a bird's eye view of what is being created, check the following [Architecture Diagrams](https://github.com/couchbase/kubernetes/wiki/Architecture-Diagrams)
 
 # Kubernetes cluster setup
 
-Setting up the Kubernetes cluster is specific to the cloud provider:
+First you need to setup Kubernetes itself before running Couchbase on it.  These instructions are specific to your particular setup (bare metal or Cloud Provider).
 
-* [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE))
-* OpenShift3
-* AWS
-* Bare Metal
+Currently instructions are provided for [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE)), with more coming soon.
 
-# Couchbase Server + Sync Gateway
+# Couchbase Server
 
 ## Clone couchbase-kubernetes
 
@@ -234,6 +171,8 @@ $ kubectl logs couchbase-controller-j7yzf couchbase-sidekick
 This is platform specific.  
 
 Currently there are only instructions for [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE))
+
+# Sync Gateway
 
 ## Create a Sync Gateway replication set
 
