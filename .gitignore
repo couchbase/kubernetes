@@ -12,3 +12,4 @@ local.properties
 /.DS_Store
 build
 cli/config.json
+kubernetes
