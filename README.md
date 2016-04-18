@@ -7,9 +7,11 @@ To get a bird's eye view of what is being created, check the following [Architec
 
 First you need to setup Kubernetes itself before running Couchbase on it.  These instructions are specific to your particular setup (bare metal or Cloud Provider).
 
-Currently instructions are provided for [Google Container Engine](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE)), with more coming soon.
-
 # Couchbase Server
+
+## Install Dependencies
+
+* [Google Container Engine tools](https://github.com/couchbase/kubernetes/wiki/Running-on-Google-Container-Engine-(GKE))
 
 ## Clone couchbase-kubernetes
 
