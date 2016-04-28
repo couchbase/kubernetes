@@ -234,6 +234,9 @@ Congrats!  You are now running Couchbase Server and Sync Gateway on Kubernetes.
 * Improve the story surrounding etcd
 * Look into persistent data storage host mounted volumes
 
+## Related Work
+
+* [tophatch/CouchbaseMobileWithKubernetes](https://github.com/tophatch/CouchbaseMobileWithKubernetes)
 
 ## References
 
