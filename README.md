@@ -64,13 +64,15 @@ Make a note of the Node it's running on (eg, gke-couchbase-server-648006db-node-
 
 ## Add Couchbase Server Admin credentials in etcd
 
+
+First, you will need to ssh into the host node where the app-etcd pod is running (or any other node in the cluster):
+
+
 ( Alternatively on linux and mac you can use this one liner )
 
 ```
 kubectl describe pod app-etcd | grep Node | awk '{print $2}'| sed 's/\/.*//'
 ```
-
-First, you will need to ssh into the host node where the app-etcd pod is running (or any other node in the cluster):
 
 ```
 $ gcloud compute ssh gke-couchbase-server-648006db-node-qgu2
