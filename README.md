@@ -64,7 +64,15 @@ Make a note of the Node it's running on (eg, gke-couchbase-server-648006db-node-
 
 ## Add Couchbase Server Admin credentials in etcd
 
+
 First, you will need to ssh into the host node where the app-etcd pod is running (or any other node in the cluster):
+
+
+( Alternatively on linux and mac you can use this one liner )
+
+```
+kubectl describe pod app-etcd | grep Node | awk '{print $2}'| sed 's/\/.*//'
+```
 
 ```
 $ gcloud compute ssh gke-couchbase-server-648006db-node-qgu2
@@ -73,6 +81,12 @@ $ gcloud compute ssh gke-couchbase-server-648006db-node-qgu2
 Replace `gcloud compute ssh gke-couchbase-server-648006db-node-qgu2` with the host found in the previous step.
 
 Next, use curl to add a value for the `/couchbase.com/userpass` key in etcd.  Use the Pod IP found above.  
+
+( Alternatively on linux and mac you can use this one liner to get the IP )
+
+```
+kubectl describe pod app-etcd | grep IP: | awk '{print $2}'
+```
 
 ```
 root@k8s~$ curl -L http://10.248.1.5:2379/v2/keys/couchbase.com/userpass -X PUT -d value="user:passw0rd"
