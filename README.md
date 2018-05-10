@@ -1,4 +1,9 @@
 
+**DEPRECATED** -- See [Couchbase Operator](https://blog.couchbase.com/introducing-couchbase-operator/)
+
+--------------------------------------
+
+
 Here are instructions on getting Couchbase Server and Couchbase Sync Gateway running under Kubernetes on GKE (Google Container Engine).  
 
 To get a bird's eye view of what is being created, check the following [Architecture Diagrams](https://github.com/couchbase/kubernetes/wiki/Architecture-Diagrams)
